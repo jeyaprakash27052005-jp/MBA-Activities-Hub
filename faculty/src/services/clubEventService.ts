@@ -37,7 +37,9 @@ export const subscribeToClubEvents = (
     (snap) => {
       const list: ClubEventAgenda[] = [];
       snap.forEach((d) => {
-        const data = d.data() as ClubEventAgenda;
+        const raw = d.data() as any;
+        if (raw.isFileChunk) return; // file data pieces are not events
+        const data = raw as ClubEventAgenda;
         list.push(data);
       });
       list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
@@ -117,9 +119,9 @@ export const getActiveSelectedParticipantRolls = (allEvents: ClubEventAgenda[], 
 // chunks stored in club_events/{eventId}/file_chunks. This makes every uploaded
 // file available to ALL portals / devices (not just the uploader's browser).
 const CHUNK_SIZE = 700_000;
-const CHUNKS_SUBCOLLECTION = 'file_chunks';
 
-const chunkDocId = (fileId: string, index: number) => `${fileId}__${String(index).padStart(4, '0')}`;
+const chunkRef = (eventId: string, fileId: string, index: number) =>
+  doc(db, CLUB_EVENTS_COLLECTION, `${eventId}__chunk__${fileId}__${String(index).padStart(4, '0')}`);
 
 const saveEventFiles = async (
   eventId: string,
@@ -136,8 +138,8 @@ const saveEventFiles = async (
       const batch = writeBatch(db);
       for (let i = start; i < Math.min(start + 6, count); i++) {
         batch.set(
-          doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(f.id, i)),
-          { fileId: f.id, index: i, data: data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE) }
+          chunkRef(eventId, f.id, i),
+          { isFileChunk: true, eventId, fileId: f.id, index: i, data: data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE) }
         );
       }
       await batch.commit();
@@ -154,7 +156,7 @@ const deleteEventFileChunks = async (eventId: string, files: EventFileAttachment
     const count = f.chunkCount || 0;
     for (let i = 0; i < count; i++) {
       try {
-        await deleteDoc(doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(f.id, i)));
+        await deleteDoc(chunkRef(eventId, f.id, i));
       } catch (e) {
         // Ignored
       }
@@ -173,7 +175,7 @@ export const fetchEventFileDataUrl = async (
 
   const parts: string[] = [];
   for (let i = 0; i < count; i++) {
-    const snap = await getDoc(doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(file.id, i)));
+    const snap = await getDoc(chunkRef(eventId, file.id, i));
     if (!snap.exists()) throw new Error('File data is incomplete in database.');
     parts.push((snap.data() as { data: string }).data);
   }
