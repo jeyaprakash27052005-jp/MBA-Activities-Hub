@@ -17,6 +17,8 @@ export interface UserProfile {
   batch?: string;
   phone?: string;
   status: 'active' | 'inactive';
+  gender?: 'Male' | 'Female' | 'Other'; // chosen by the student on first login
+  profileCompleted?: boolean; // false/undefined until a student finishes the first-login profile step
   passwordHash?: string;
   createdAt: string;
   updatedAt: string;
@@ -45,6 +47,7 @@ export interface EventFileAttachment {
 export interface EventParticipant {
   rollNumber: string;
   name: string;
+  gender?: string;
   selectedByExecutiveRoll?: string;
 }
 
@@ -67,6 +70,7 @@ export interface ClubEventAgenda {
   // Incharge details
   eventInchargeName: string;
   eventInchargeRoll: string;
+  eventInchargeGender?: string;
   
   // Executive who selected participants
   createdExecutiveRoll: string;

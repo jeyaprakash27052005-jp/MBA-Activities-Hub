@@ -18,6 +18,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithRollNumber: (rollNumber: string, pass: string) => Promise<UserProfile>;
   signOut: () => Promise<void>;
+  syncProfile: (profile: UserProfile) => void;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -125,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         loginWithRollNumber,
         signOut,
+        syncProfile: (p: UserProfile) => setUserProfile(p),
         updateUserProfile
       }}
     >

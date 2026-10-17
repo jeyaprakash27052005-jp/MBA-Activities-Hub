@@ -59,7 +59,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
   const [addingClub, setAddingClub] = useState(false);
 
   // Explicit submit button state for position allocation
-  const [editingPositions, setEditingPositions] = useState<Record<string, { position: string; club: string }>>({});
+  const [editingPositions, setEditingPositions] = useState<Record<string, { position: string; club: string; department?: string; displayName?: string }>>({});
   const [submittingPositionUid, setSubmittingPositionUid] = useState<string | null>(null);
   const [savedPositionSuccessUid, setSavedPositionSuccessUid] = useState<string | null>(null);
 
@@ -68,11 +68,15 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
       position: st.position || 'Member', 
       club: st.club || 'NISM' 
     };
+    const department = (chosen.department ?? st.department ?? '').trim();
+    const displayName = (chosen.displayName ?? st.displayName ?? '').trim();
     setSubmittingPositionUid(st.uid);
     try {
       await updateSystemUser(st.uid, {
         position: chosen.position,
         club: chosen.club,
+        ...(department ? { department } : {}),
+        ...(displayName ? { displayName } : {}),
       });
       setSavedPositionSuccessUid(st.uid);
       setTimeout(() => setSavedPositionSuccessUid(null), 2500);
@@ -189,6 +193,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
           canCreateEvent={true}
+          allStudents={allStudents}
         />
       )}
 
@@ -219,6 +224,8 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                   <th className="px-4 py-3">Student Name</th>
                   <th className="px-4 py-3">Position Selection</th>
                   <th className="px-4 py-3">Assigned Club</th>
+                  <th className="px-4 py-3">Department</th>
+                  <th className="px-4 py-3">Gender</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
@@ -232,7 +239,25 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                   return (
                     <tr key={st.uid} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-mono font-bold text-blue-600">{st.rollNumber}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900">{st.displayName}</td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editingPositions[st.uid]?.displayName ?? st.displayName}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingPositions(prev => ({
+                              ...prev,
+                              [st.uid]: {
+                                position: prev[st.uid]?.position ?? (st.position || 'Member'),
+                                club: prev[st.uid]?.club ?? (st.club || 'NISM'),
+                                department: prev[st.uid]?.department,
+                                displayName: val,
+                              }
+                            }));
+                          }}
+                          className="w-40 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-900"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <select
                           value={currentPos}
@@ -241,6 +266,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                             setEditingPositions(prev => ({
                               ...prev,
                               [st.uid]: {
+                                ...prev[st.uid],
                                 position: val,
                                 club: prev[st.uid]?.club ?? (st.club || 'NISM'),
                               }
@@ -261,6 +287,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                             setEditingPositions(prev => ({
                               ...prev,
                               [st.uid]: {
+                                ...prev[st.uid],
                                 position: prev[st.uid]?.position ?? (st.position || 'Member'),
                                 club: val,
                               }
@@ -273,6 +300,27 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                           ))}
                         </select>
                       </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          placeholder="e.g. Finance"
+                          value={editingPositions[st.uid]?.department ?? (st.department && st.department !== 'MBA General' ? st.department : '')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingPositions(prev => ({
+                              ...prev,
+                              [st.uid]: {
+                                position: prev[st.uid]?.position ?? (st.position || 'Member'),
+                                club: prev[st.uid]?.club ?? (st.club || 'NISM'),
+                                displayName: prev[st.uid]?.displayName,
+                                department: val,
+                              }
+                            }));
+                          }}
+                          className="w-32 px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{st.gender || 'Not set'}</td>
                       <td className="px-4 py-3">
                         <button
                           type="button"

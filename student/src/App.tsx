@@ -3,6 +3,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { StudentLogin } from './components/student/StudentLogin';
+import { ProfileSetup } from './components/student/ProfileSetup';
 import { StudentPortal } from './components/student/StudentPortal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { EventAgendaModal } from './components/events/EventAgendaModal';
@@ -11,7 +12,7 @@ import { subscribeToUsers } from './services/userService';
 import { subscribeToClubEvents, subscribeToClubs } from './services/clubEventService';
 
 function MainApp() {
-  const { userProfile } = useAuth();
+  const { userProfile, syncProfile } = useAuth();
 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [clubEvents, setClubEvents] = useState<ClubEventAgenda[]>([]);
@@ -27,7 +28,18 @@ function MainApp() {
     return () => { unsubUsers(); unsubEvents(); unsubClubs(); };
   }, [userProfile?.uid]);
 
+  // Keep the signed-in profile in sync with the database (e.g. department set by faculty)
+  const liveProfile = userProfile ? users.find((u) => u.uid === userProfile.uid) : undefined;
+  useEffect(() => {
+    if (liveProfile && userProfile && liveProfile.updatedAt !== userProfile.updatedAt) syncProfile(liveProfile);
+  }, [liveProfile?.updatedAt]);
+
   if (!userProfile) return <StudentLogin />;
+
+  // First login: student must complete the profile step
+  if (!userProfile.profileCompleted && !liveProfile?.profileCompleted) {
+    return <ProfileSetup profile={liveProfile || userProfile} />;
+  }
 
   const studentUsers = users.filter((u) => u.role === 'student');
 

@@ -17,6 +17,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const isStudent = userProfile?.role === 'student';
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,10 +33,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
     setSaving(true);
     try {
-      const updates: any = {
-        displayName,
-        department,
-      };
+      const updates: any = { displayName };
+      if (!isStudent) updates.department = department;
       if (newPassword) {
         updates.passwordHash = newPassword;
       }
@@ -98,12 +98,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Department / Discipline
+              Department / Discipline{isStudent ? ' (set by faculty)' : ''}
             </label>
             <input
               type="text"
-              value={department}
+              value={isStudent ? (userProfile?.department || 'Not assigned yet') : department}
               onChange={(e) => setDepartment(e.target.value)}
+              disabled={isStudent}
               className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
             />
           </div>

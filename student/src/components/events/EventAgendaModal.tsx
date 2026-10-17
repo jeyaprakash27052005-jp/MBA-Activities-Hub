@@ -95,6 +95,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
         {
           rollNumber: st.rollNumber || '',
           name: st.displayName,
+          gender: st.gender || '',
           selectedByExecutiveRoll: userProfile?.rollNumber || 'EXECUTIVE',
         }
       ]);
@@ -191,6 +192,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
         description,
         eventInchargeName: inchargeStudent?.displayName || `Student ${inchargeRoll}`,
         eventInchargeRoll: inchargeRoll,
+        eventInchargeGender: inchargeStudent?.gender || '',
         createdExecutiveRoll: userProfile?.rollNumber || 'ADMIN',
         createdExecutiveName: userProfile?.displayName || 'Head Admin',
         participants: selectedParticipants,
@@ -329,7 +331,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
               <option value="">-- Select Event Incharge (Student Member) --</option>
               {allStudents.map((st) => (
                 <option key={st.uid} value={st.rollNumber}>
-                  {st.displayName} ({st.rollNumber || 'No Roll'}) &bull; Position: {st.position || 'Member'}
+                  {st.displayName} ({st.rollNumber || 'No Roll'}) &bull; {st.gender || 'Gender N/A'} &bull; Position: {st.position || 'Member'}
                 </option>
               ))}
             </select>
@@ -422,7 +424,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
                       <span className="font-mono text-[11px] truncate">{st.rollNumber}</span>
                       {isChosen && <Check className="w-3.5 h-3.5 shrink-0" />}
                     </div>
-                    <div className="text-[11px] truncate">{st.displayName}</div>
+                    <div className="text-[11px] truncate">{st.displayName} &bull; {st.gender || 'N/A'}</div>
                   </button>
                 );
               })}

@@ -27,6 +27,7 @@ interface ClubEventsSectionProps {
   clubs: ClubCategory[];
   onOpenCreateModal: () => void;
   canCreateEvent: boolean;
+  allStudents?: UserProfile[];
 }
 
 export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
@@ -34,7 +35,14 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
   clubs,
   onOpenCreateModal,
   canCreateEvent,
+  allStudents = [],
 }) => {
+  // Live gender lookup (falls back to the gender saved with the event)
+  const genderOf = (roll?: string, fallback?: string) => {
+    const st = allStudents.find((s) => (s.rollNumber || '').toUpperCase() === (roll || '').toUpperCase());
+    return st?.gender || fallback || '';
+  };
+
   const { userProfile, role, isAdmin, isFaculty } = useAuth();
   const [selectedClubFilter, setSelectedClubFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -317,7 +325,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                     Name of Event Incharge:
                   </div>
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900">
-                    <span>{ev.eventInchargeName}</span>
+                    <span>{ev.eventInchargeName} <span className="font-normal text-slate-500">({genderOf(ev.eventInchargeRoll, ev.eventInchargeGender) || 'Gender N/A'})</span></span>
                     <span className="font-mono text-indigo-600">{ev.eventInchargeRoll}</span>
                   </div>
                   <div className="text-[11px] text-slate-500">
@@ -329,13 +337,22 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                 <div className="p-3 rounded-xl bg-indigo-50/40 border border-indigo-100 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-indigo-950">
                     <span>Selected 8 Participants</span>
-                    <span className="text-[10px] font-mono text-indigo-600">Exclusive Allocation</span>
+                    <span className="text-[10px] font-mono text-indigo-600">
+                      {(() => {
+                        const ps = ev.participants || [];
+                        const male = ps.filter((p) => genderOf(p.rollNumber, p.gender) === 'Male').length;
+                        const female = ps.filter((p) => genderOf(p.rollNumber, p.gender) === 'Female').length;
+                        const other = ps.length - male - female;
+                        return `Male ${male} \u2022 Female ${female}` + (other > 0 ? ` \u2022 Other/NA ${other}` : '');
+                      })()}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-[11px]">
                     {(ev.participants || []).map((p, idx) => (
                       <div key={idx} className="p-1 rounded bg-white border border-indigo-100 truncate">
                         <span className="font-mono font-bold text-indigo-600 mr-1">{p.rollNumber}:</span>
                         <span className="text-slate-800">{p.name}</span>
+                        <span className="text-slate-500 ml-1">({genderOf(p.rollNumber, p.gender) || 'Gender N/A'})</span>
                       </div>
                     ))}
                   </div>

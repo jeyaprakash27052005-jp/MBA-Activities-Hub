@@ -462,6 +462,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
           canCreateEvent={true}
+          allStudents={users.filter((u) => u.role === 'student')}
         />
       )}
 
@@ -555,6 +556,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                   <tr>
                     <th className="px-4 py-3">Roll Number</th>
                     <th className="px-4 py-3">Student Name</th>
+                    <th className="px-4 py-3">Gender</th>
                     <th className="px-4 py-3">Assigned Position</th>
                     <th className="px-4 py-3">Assigned Club</th>
                     <th className="px-4 py-3">Action</th>
@@ -576,6 +578,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                         <td className="px-4 py-3 font-bold text-slate-900">
                           {u.displayName}
                         </td>
+                        <td className="px-4 py-3 text-slate-600">{u.gender || 'Not set'}</td>
                         <td className="px-4 py-3">
                           <select
                             value={currentPos}
@@ -982,6 +985,17 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                   value={newUserRoll}
                   onChange={(e) => setNewUserRoll(e.target.value.toUpperCase())}
                   className="w-full px-3 py-2 rounded-xl text-xs font-mono bg-slate-50 border border-slate-300 text-slate-900 uppercase font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Department</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Finance"
+                  value={newUserDept}
+                  onChange={(e) => setNewUserDept(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 border border-slate-300 text-slate-900"
                 />
               </div>
 

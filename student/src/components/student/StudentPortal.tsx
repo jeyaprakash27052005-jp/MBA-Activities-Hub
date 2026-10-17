@@ -136,6 +136,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
           canCreateEvent={isSecretary || isExecutive}
+          allStudents={allStudents}
         />
       )}
 
@@ -171,7 +172,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   <div className="text-xs text-slate-500 space-y-1 pt-1 border-t border-slate-100">
                     <div>Date: <strong>{ev.date} ({ev.startTime} - {ev.endTime})</strong></div>
                     <div>Venue: <strong>{ev.venue}</strong></div>
-                    <div>Event Incharge: <strong>{ev.eventInchargeName} ({ev.eventInchargeRoll})</strong></div>
+                    <div>Event Incharge: <strong>{ev.eventInchargeName} ({ev.eventInchargeRoll})</strong> &bull; {(allStudents.find(s => (s.rollNumber || '').toUpperCase() === (ev.eventInchargeRoll || '').toUpperCase())?.gender) || ev.eventInchargeGender || 'Gender N/A'}</div>
                   </div>
                 </div>
               );
