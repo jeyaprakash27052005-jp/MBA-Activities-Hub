@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global test connection document for client validation
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Settings for feature access controls
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Admin role mapping collection
+    match /admins/{adminId} {
+      allow read, write: if true;
+    }
+
+    // Users and roll-number logins collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // MBA Activities / Agenda items
+    match /activities/{activityId} {
+      allow read, write: if true;
+    }
+
+    // Student Event Agendas with 8 participants and file attachments
+    match /club_events/{eventId} {
+      allow read, write: if true;
+    }
+
+    // Club Categories (NISM, NIPM, Ad Club, Student Activity, and custom)
+    match /clubs/{clubId} {
+      allow read, write: if true;
+    }
+
+    // Dynamic Forms
+    match /forms/{formId} {
+      allow read, write: if true;
+
+      // Form Submissions sub-collection
+      match /submissions/{submissionId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}

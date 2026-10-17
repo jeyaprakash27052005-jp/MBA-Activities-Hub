@@ -1,0 +1,6 @@
+{
+  "name": "MBA Activities Hub",
+  "description": "Comprehensive MBA activity management platform with agenda, forms, user roles, and Firebase Firestore database.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

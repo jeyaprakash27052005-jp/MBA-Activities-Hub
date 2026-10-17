@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access for MBA faculty, students, and administrators.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin", "faculty", "student"] },
+        "rollNumber": { "type": "string", "maxLength": 50 },
+        "facultyId": { "type": "string", "maxLength": 50 },
+        "yearOfStudying": { "type": "string", "maxLength": 50 },
+        "position": { "type": "string", "maxLength": 100 },
+        "department": { "type": "string", "maxLength": 100 },
+        "batch": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "passwordHash": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "displayName", "role", "status"]
+    },
+    "FeatureSettings": {
+      "title": "FeatureSettings",
+      "description": "Granular on/off access control switches managed by Head Admin.",
+      "type": "object",
+      "properties": {
+        "studentCanRSVP": { "type": "boolean" },
+        "studentCanSubmitForms": { "type": "boolean" },
+        "studentCanViewMaterials": { "type": "boolean" },
+        "studentLeadersCanCreateEvents": { "type": "boolean" },
+        "facultyCanCreateActivities": { "type": "boolean" },
+        "facultyCanCreateForms": { "type": "boolean" },
+        "facultyCanApproveSubmissions": { "type": "boolean" },
+        "allowStudentSelfRegistration": { "type": "boolean" },
+        "maintenanceMode": { "type": "boolean" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["studentCanRSVP", "studentCanSubmitForms", "facultyCanCreateActivities"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "MBA event, seminar, workshop, or competition agenda item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "category": {
+          "type": "string",
+          "enum": ["workshop", "seminar", "guest_lecture", "competition", "club_event", "placement", "industrial_visit", "academic"]
+        },
+        "date": { "type": "string", "maxLength": 30 },
+        "startTime": { "type": "string", "maxLength": 20 },
+        "endTime": { "type": "string", "maxLength": 20 },
+        "venue": { "type": "string", "maxLength": 200 },
+        "speaker": { "type": "string", "maxLength": 150 },
+        "organizerId": { "type": "string", "maxLength": 128 },
+        "organizerName": { "type": "string", "maxLength": 100 },
+        "maxParticipants": { "type": "number" },
+        "registeredCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["upcoming", "ongoing", "completed", "cancelled"] },
+        "targetYear": { "type": "string", "maxLength": 50 },
+        "targetPosition": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "description", "category", "date", "venue", "status", "organizerId"]
+    },
+    "Form": {
+      "title": "Form",
+      "description": "Dynamic activity registration or feedback form created by faculty or admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "activityId": { "type": "string", "maxLength": 128 },
+        "activityTitle": { "type": "string", "maxLength": 200 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 100 },
+        "deadline": { "type": "string", "maxLength": 50 },
+        "isPublished": { "type": "boolean" },
+        "allowMultipleSubmissions": { "type": "boolean" },
+        "fields": { "type": "array" },
+        "submissionCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "createdBy", "isPublished"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "Student submission or registration response for an MBA activity form.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "formId": { "type": "string", "maxLength": 128 },
+        "activityId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userRollNumber": { "type": "string", "maxLength": 50 },
+        "userPosition": { "type": "string", "maxLength": 100 },
+        "responses": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "waitlisted"] },
+        "submittedAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "formId", "userId", "userEmail", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles partitioned by user ID."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Admin directory for RBAC lookups."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/FeatureSettings" },
+      "description": "Feature access control on/off toggles managed by Head Admin."
+    },
+    "/activities/{activityId}": {
+      "schema": { "$ref": "#/entities/Activity" },
+      "description": "MBA department and club agenda activities."
+    },
+    "/forms/{formId}": {
+      "schema": { "$ref": "#/entities/Form" },
+      "description": "Event registration and survey forms."
+    },
+    "/forms/{formId}/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/Submission" },
+      "description": "User responses submitted for a specific form."
+    }
+  }
+}
