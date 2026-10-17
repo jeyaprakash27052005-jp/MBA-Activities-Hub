@@ -12,8 +12,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ profile }) => {
   const { updateUserProfile, signOut } = useAuth();
   const [name, setName] = useState(profile.displayName?.startsWith('MBA Student ') ? '' : (profile.displayName || ''));
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other' | ''>(profile.gender || '');
-  // Name is set by faculty / Head Admin; the student can only type it if it was never set
-  const nameLocked = !!profile.displayName && !profile.displayName.startsWith('MBA Student ');
+  const [collegeEmail, setCollegeEmail] = useState(profile.email && !profile.email.endsWith('@mba.edu') ? profile.email : '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -24,13 +23,17 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ profile }) => {
       setError('Please enter your name.');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(collegeEmail.trim())) {
+      setError('Please enter a valid college mail ID.');
+      return;
+    }
     if (!gender) {
       setError('Please select your gender.');
       return;
     }
     setSaving(true);
     try {
-      await updateUserProfile({ displayName: name.trim(), gender, profileCompleted: true });
+      await updateUserProfile({ displayName: name.trim(), email: collegeEmail.trim().toLowerCase(), gender, profileCompleted: true });
     } catch (err: any) {
       setError(err?.message || 'Could not save your profile. Please try again.');
     } finally {
@@ -60,23 +63,28 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ profile }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-              <span>Name {nameLocked ? '' : '*'}</span>
-              {nameLocked && <span className="font-normal text-slate-400">(set by faculty)</span>}
-            </label>
-            {nameLocked ? (
-              <div className={readOnly}>{profile.displayName}</div>
-            ) : (
-              <input
-                type="text"
-                required
-                autoFocus
-                placeholder="Enter your full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            )}
+            <label className="text-xs font-bold text-slate-700">Name *</label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="Enter your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">College Mail ID *</label>
+            <input
+              type="email"
+              required
+              placeholder="yourname@college.edu"
+              value={collegeEmail}
+              onChange={(e) => setCollegeEmail(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
 
           <div className="space-y-1">

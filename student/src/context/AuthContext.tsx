@@ -3,7 +3,7 @@ import {
   User as FirebaseUser,
   signOut as fbSignOut
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile, UserRole } from '../types';
 import { findUserByRollNumber } from '../services/userService';
@@ -43,6 +43,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(false);
 
   // Sync with localStorage
+  // Live-follow the signed-in student's own record so changes made by faculty / Head Admin
+  // (e.g. a newly assigned Secretary / Executive position) appear immediately.
+  const activeUid = userProfile?.uid;
+  useEffect(() => {
+    if (!activeUid) return;
+    const unsub = onSnapshot(
+      doc(db, 'users', activeUid),
+      (snap) => {
+        if (!snap.exists()) return;
+        const live = snap.data() as UserProfile;
+        setUserProfile((prev) => (prev && JSON.stringify(prev) !== JSON.stringify(live) ? live : prev));
+      },
+      (err) => console.warn('Profile listener notice:', err)
+    );
+    return () => unsub();
+  }, [activeUid]);
+
   useEffect(() => {
     if (userProfile) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile));

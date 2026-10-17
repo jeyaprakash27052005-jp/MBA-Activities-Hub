@@ -226,6 +226,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                   <th className="px-4 py-3">Assigned Club</th>
                   <th className="px-4 py-3">Department</th>
                   <th className="px-4 py-3">Gender</th>
+                  <th className="px-4 py-3">College Mail</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
@@ -321,6 +322,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                         />
                       </td>
                       <td className="px-4 py-3 text-slate-600">{st.gender || 'Not set'}</td>
+                      <td className="px-4 py-3 text-slate-600">{st.email && !st.email.endsWith('@mba.edu') ? st.email : 'Not set'}</td>
                       <td className="px-4 py-3">
                         <button
                           type="button"
