@@ -16,7 +16,7 @@ interface AuthContextType {
   isFaculty: boolean;
   isStudent: boolean;
   loading: boolean;
-  loginAsHeadAdmin: (emailOrUser: string, pass: string) => Promise<UserProfile>;
+  loginAsHeadAdmin: (pass: string) => Promise<UserProfile>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
@@ -53,20 +53,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Head Admin Login - Password MUST strictly be: Prakash@27&
   const HEAD_ADMIN_PASSWORD = 'Prakash@27&';
 
-  const loginAsHeadAdmin = async (emailOrUser: string, pass: string): Promise<UserProfile> => {
-    const clean = emailOrUser.trim().toLowerCase();
+  const loginAsHeadAdmin = async (pass: string): Promise<UserProfile> => {
     const cleanPass = pass.trim();
 
-    // The Head Admin password is the credential; any non-empty username is accepted with it.
-    if (cleanPass !== HEAD_ADMIN_PASSWORD || !clean) {
-      throw new Error('Invalid login: Head Admin username or password is incorrect.');
+    // Head Admin signs in with the password only.
+    if (cleanPass !== HEAD_ADMIN_PASSWORD) {
+      throw new Error('Invalid login: incorrect Head Admin password.');
     }
 
     {
       const adminProfile: UserProfile = {
         uid: 'head_admin_001',
         displayName: 'Dean Marcus Vance (Head Admin)',
-        email: clean.includes('@') ? clean : 'admin@mba.edu',
+        email: 'admin@mba.edu',
         role: 'admin',
         position: 'Head of MBA Program & Chief Administrator',
         department: 'Dean Office',

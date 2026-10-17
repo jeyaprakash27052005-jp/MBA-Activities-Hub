@@ -9,7 +9,6 @@ import { useAuth } from '../../context/AuthContext';
 
 export const AdminLogin: React.FC = () => {
   const { loginAsHeadAdmin } = useAuth();
-  const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -19,9 +18,9 @@ export const AdminLogin: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      await loginAsHeadAdmin(adminUser, adminPass);
+      await loginAsHeadAdmin(adminPass);
     } catch (err: any) {
-      setError(err?.message || 'Head Admin login failed.');
+      setError(err?.message || 'Invalid login.');
     } finally {
       setLoading(false);
     }
@@ -58,20 +57,6 @@ export const AdminLogin: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700">
-              Admin Username or Email *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Username or email"
-              value={adminUser}
-              onChange={(e) => setAdminUser(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
-            />
-          </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-700">
               Admin Password *
