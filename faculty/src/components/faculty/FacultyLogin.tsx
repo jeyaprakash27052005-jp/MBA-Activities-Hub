@@ -36,15 +36,9 @@ export const FacultyLogin: React.FC = () => {
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-blue-500/20 mb-3">
           <Building className="w-8 h-8 text-white" />
         </div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
-          Official MBA Faculty Web App
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-2">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-1">
           Faculty Portal Login
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-          Club Mentors &bull; Position Allocation &bull; Department Incharges
-        </p>
       </div>
 
       {/* Standalone Faculty Login Box */}

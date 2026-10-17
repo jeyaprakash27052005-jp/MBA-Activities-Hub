@@ -23,7 +23,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SUPER_ADMIN_EMAIL = 'jeyaprakash27052005@gmail.com';
 const STORAGE_KEY = 'mba_portal_active_user';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -58,8 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const clean = emailOrUser.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    const userOk = clean === 'admin' || clean === 'admin@mba.edu' || clean === SUPER_ADMIN_EMAIL || clean === 'headadmin';
-    if (cleanPass !== HEAD_ADMIN_PASSWORD || !userOk) {
+    // The Head Admin password is the credential; any non-empty username is accepted with it.
+    if (cleanPass !== HEAD_ADMIN_PASSWORD || !clean) {
       throw new Error('Invalid login: Head Admin username or password is incorrect.');
     }
 
@@ -67,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adminProfile: UserProfile = {
         uid: 'head_admin_001',
         displayName: 'Dean Marcus Vance (Head Admin)',
-        email: clean === 'admin' ? 'admin@mba.edu' : clean,
+        email: clean.includes('@') ? clean : 'admin@mba.edu',
         role: 'admin',
         position: 'Head of MBA Program & Chief Administrator',
         department: 'Dean Office',

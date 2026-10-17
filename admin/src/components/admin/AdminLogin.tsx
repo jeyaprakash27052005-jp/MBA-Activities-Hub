@@ -36,15 +36,9 @@ export const AdminLogin: React.FC = () => {
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-purple-500/20 mb-3">
           <ShieldCheck className="w-8 h-8 text-white" />
         </div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-3 py-1 rounded-lg border border-purple-200">
-          Official Head Admin Web App
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-2">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-1">
           Head Admin Command
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-          Master Program Governance &bull; Access Controls &bull; Excel Import
-        </p>
       </div>
 
       {/* Standalone Head Admin Login Box */}
@@ -71,7 +65,7 @@ export const AdminLogin: React.FC = () => {
             <input
               type="text"
               required
-              placeholder="admin or admin@mba.edu"
+              placeholder="Username or email"
               value={adminUser}
               onChange={(e) => setAdminUser(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
