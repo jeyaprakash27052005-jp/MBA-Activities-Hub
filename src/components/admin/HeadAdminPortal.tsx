@@ -18,7 +18,10 @@ import {
   Sparkles, 
   Settings,
   FolderPlus,
-  Tag
+  Tag,
+  Globe,
+  Check,
+  Building
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Activity, ClubCategory, ClubEventAgenda, DynamicForm, FeatureAccessControls, UserProfile, UserRole } from '../../types';
@@ -28,10 +31,12 @@ import {
   updateSystemUser, 
   deleteSystemUser, 
   generateStudentCohort, 
-  importUsersFromExcelRows 
+  importUsersFromExcelRows,
+  isValidStudentRollNumber 
 } from '../../services/userService';
 import { addCustomClub } from '../../services/clubEventService';
 import { ClubEventsSection } from '../events/ClubEventsSection';
+import { VercelHostGuide } from '../VercelHostGuide';
 
 interface HeadAdminPortalProps {
   featureControls: FeatureAccessControls;
@@ -58,7 +63,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
   onOpenCreateForm,
   onSelectForm,
 }) => {
-  const [adminTab, setAdminTab] = useState<'club_events' | 'access_control' | 'excel_import' | 'users' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
+  const [adminTab, setAdminTab] = useState<'club_events' | 'access_control' | 'excel_import' | 'users' | 'create_faculty' | 'clubs_mgmt' | 'activities' | 'forms' | 'vercel_deploy'>('club_events');
 
   // Excel Import state
   const [importLoading, setImportLoading] = useState(false);
@@ -72,6 +77,23 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'student' | 'faculty' | 'admin'>('all');
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+
+  // Assign positions explicit submit state
+  const [editingPositions, setEditingPositions] = useState<Record<string, { position: string; club: string }>>({});
+  const [submittingPositionUid, setSubmittingPositionUid] = useState<string | null>(null);
+  const [savedPositionSuccessUid, setSavedPositionSuccessUid] = useState<string | null>(null);
+
+  // Create Faculty Profile state
+  const [facRoll, setFacRoll] = useState('');
+  const [facName, setFacName] = useState('');
+  const [facEmail, setFacEmail] = useState('');
+  const [facDept, setFacDept] = useState('Management Studies');
+  const [facPosition, setFacPosition] = useState('Faculty Coordinator');
+  const [facClub, setFacClub] = useState('NISM');
+  const [facPass, setFacPass] = useState('');
+  const [creatingFaculty, setCreatingFaculty] = useState(false);
+  const [facultySuccess, setFacultySuccess] = useState<string | null>(null);
+  const [facultyError, setFacultyError] = useState<string | null>(null);
 
   // Custom Club state
   const [newClubName, setNewClubName] = useState('');
@@ -179,16 +201,25 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName) return;
+    if (!newUserName.trim()) return;
+
+    const cleanRoll = newUserRoll.trim().toUpperCase();
+
+    // Strict requirement: student roll number MUST be 25MBA001 to 25MBA175
+    if (newUserRole === 'student') {
+      if (!isValidStudentRollNumber(cleanRoll)) {
+        alert('Invalid Student Roll Number! Only roll numbers from 25MBA001 to 25MBA175 can be created.');
+        return;
+      }
+    }
 
     setSavingUser(true);
     try {
-      const cleanRoll = newUserRoll.trim().toUpperCase();
       const uid = cleanRoll ? `student_${cleanRoll.toLowerCase()}` : `usr_${Date.now()}`;
       await createSystemUser({
         uid,
-        displayName: newUserName,
-        email: newUserEmail || `${cleanRoll ? cleanRoll.toLowerCase() : 'user'}@mba.edu`,
+        displayName: newUserName.trim(),
+        email: newUserEmail.trim() || `${cleanRoll ? cleanRoll.toLowerCase() : 'user'}@mba.edu`,
         role: newUserRole,
         rollNumber: cleanRoll || undefined,
         passwordHash: cleanRoll || '123456',
@@ -201,6 +232,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
       setIsAddUserModalOpen(false);
       setNewUserName('');
       setNewUserRoll('');
+      setNewUserEmail('');
     } catch (err: any) {
       alert('Failed to save user: ' + err.message);
     } finally {
@@ -208,12 +240,69 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     }
   };
 
-  // Change student position: Secretary, Executive, or Member
-  const handleUpdateStudentPosition = async (u: UserProfile, newPos: string) => {
+  // Dedicated Faculty Profile Creation by Head Admin
+  const handleCreateFaculty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFacultyError(null);
+    setFacultySuccess(null);
+
+    const cleanId = facRoll.trim().toUpperCase();
+    if (!cleanId) {
+      setFacultyError('Please enter Faculty Roll Number or ID (e.g. FAC001).');
+      return;
+    }
+    if (!facName.trim()) {
+      setFacultyError('Please enter Faculty Full Name.');
+      return;
+    }
+
+    setCreatingFaculty(true);
     try {
-      await updateSystemUser(u.uid, { position: newPos });
+      const uid = `fac_${cleanId.toLowerCase()}`;
+      await createSystemUser({
+        uid,
+        displayName: facName.trim(),
+        email: facEmail.trim() || `${cleanId.toLowerCase()}@mba.edu`,
+        role: 'faculty',
+        facultyId: cleanId,
+        rollNumber: cleanId,
+        passwordHash: facPass.trim() || cleanId, // default password is ID / Roll Number
+        position: facPosition,
+        club: facClub,
+        department: facDept,
+        batch: 'Faculty Board',
+        status: 'active',
+      });
+      setFacultySuccess(`Faculty profile "${facName}" (ID: ${cleanId}) created successfully! They can now log in using ID: ${cleanId} and password.`);
+      setFacRoll('');
+      setFacName('');
+      setFacEmail('');
+      setFacPass('');
+    } catch (err: any) {
+      setFacultyError('Failed to create faculty: ' + err.message);
+    } finally {
+      setCreatingFaculty(false);
+    }
+  };
+
+  // Submit button action for assign positions option
+  const handleSubmitPosition = async (u: UserProfile) => {
+    const chosen = editingPositions[u.uid] || { 
+      position: u.position || 'Member', 
+      club: u.club || 'NISM' 
+    };
+    setSubmittingPositionUid(u.uid);
+    try {
+      await updateSystemUser(u.uid, {
+        position: chosen.position,
+        club: chosen.club,
+      });
+      setSavedPositionSuccessUid(u.uid);
+      setTimeout(() => setSavedPositionSuccessUid(null), 2500);
     } catch (err: any) {
       alert('Failed to update position: ' + err.message);
+    } finally {
+      setSubmittingPositionUid(null);
     }
   };
 
@@ -254,7 +343,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
       <div className="rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 p-6 text-white shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-lg text-xs font-bold bg-white/20 text-white mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Head Administrator Command Center</span>
             </div>
@@ -333,6 +422,18 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         </button>
 
         <button
+          onClick={() => setAdminTab('create_faculty')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            adminTab === 'create_faculty'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Building className="w-3.5 h-3.5" />
+          <span>Create Faculty Profile ({users.filter(u => u.role === 'faculty').length})</span>
+        </button>
+
+        <button
           onClick={() => setAdminTab('clubs_mgmt')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             adminTab === 'clubs_mgmt'
@@ -354,6 +455,18 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
           <span>Import Excel Roster</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('vercel_deploy')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            adminTab === 'vercel_deploy'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Vercel Multi-Link Configs</span>
         </button>
       </div>
 
@@ -457,59 +570,299 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                   <tr>
                     <th className="px-4 py-3">Roll Number</th>
                     <th className="px-4 py-3">Student Name</th>
-                    <th className="px-4 py-3">Assigned Position (Change)</th>
+                    <th className="px-4 py-3">Assigned Position</th>
                     <th className="px-4 py-3">Assigned Club</th>
+                    <th className="px-4 py-3">Action</th>
                     <th className="px-4 py-3 text-right">Delete</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filteredUsers.filter(u => u.role === 'student').slice(0, 100).map((u) => (
-                    <tr key={u.uid} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-mono font-bold text-indigo-600">
-                        {u.rollNumber}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-slate-900">
-                        {u.displayName}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={u.position || 'Member'}
-                          onChange={(e) => handleUpdateStudentPosition(u, e.target.value)}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800"
-                        >
-                          <option value="Secretary">Secretary (Can Approve Events)</option>
-                          <option value="Executive">Executive (Selects 8 Participants)</option>
-                          <option value="Member">Member (Normal Member)</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={u.club || 'NISM'}
-                          onChange={async (e) => {
-                            await updateSystemUser(u.uid, { club: e.target.value });
-                          }}
-                          className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
-                        >
-                          {clubs.map(c => (
-                            <option key={c.id} value={c.name}>{c.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Remove ${u.displayName}?`)) await deleteSystemUser(u.uid);
-                          }}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredUsers.filter(u => u.role === 'student').slice(0, 100).map((u) => {
+                    const currentPos = editingPositions[u.uid]?.position ?? (u.position || 'Member');
+                    const currentClub = editingPositions[u.uid]?.club ?? (u.club || 'NISM');
+                    const isSaving = submittingPositionUid === u.uid;
+                    const isSaved = savedPositionSuccessUid === u.uid;
+
+                    return (
+                      <tr key={u.uid} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-mono font-bold text-indigo-600">
+                          {u.rollNumber}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-slate-900">
+                          {u.displayName}
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={currentPos}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditingPositions(prev => ({
+                                ...prev,
+                                [u.uid]: {
+                                  position: val,
+                                  club: prev[u.uid]?.club ?? (u.club || 'NISM'),
+                                }
+                              }));
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800"
+                          >
+                            <option value="Secretary">Secretary (Can Approve Events)</option>
+                            <option value="Executive">Executive (Selects 8 Participants)</option>
+                            <option value="Member">Member (Normal Member)</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={currentClub}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditingPositions(prev => ({
+                                ...prev,
+                                [u.uid]: {
+                                  position: prev[u.uid]?.position ?? (u.position || 'Member'),
+                                  club: val,
+                                }
+                              }));
+                            }}
+                            className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
+                          >
+                            {clubs.map(c => (
+                              <option key={c.id} value={c.name}>{c.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => handleSubmitPosition(u)}
+                            disabled={isSaving}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs flex items-center gap-1 transition-all disabled:opacity-50"
+                          >
+                            {isSaving ? (
+                              <span>Submitting...</span>
+                            ) : isSaved ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-white" />
+                                <span>Saved!</span>
+                              </>
+                            ) : (
+                              <span>Submit</span>
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Remove ${u.displayName}?`)) await deleteSystemUser(u.uid);
+                            }}
+                            className="p-1 rounded text-slate-400 hover:text-slate-900"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE FACULTY PROFILE TAB */}
+      {adminTab === 'create_faculty' && (
+        <div className="space-y-6">
+          <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Building className="w-5 h-5 text-purple-600" />
+                <span>Create Faculty Member Profile</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Only faculty members created here by the Head Admin can sign into the Faculty Web App. Enter their Faculty ID / Roll Number, Name, and profile details below.
+              </p>
+            </div>
+
+            {facultySuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{facultySuccess}</span>
+              </div>
+            )}
+
+            {facultyError && (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{facultyError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateFaculty} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 max-w-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Faculty Roll Number / Staff ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. FAC001, FAC002"
+                    value={facRoll}
+                    onChange={(e) => setFacRoll(e.target.value.toUpperCase())}
+                    className="w-full px-3.5 py-2 rounded-xl text-xs font-mono font-bold uppercase bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Faculty Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dr. Sarah Mitchell"
+                    value={facName}
+                    onChange={(e) => setFacName(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. faculty@mba.edu"
+                    value={facEmail}
+                    onChange={(e) => setFacEmail(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl text-xs bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Management Studies"
+                    value={facDept}
+                    onChange={(e) => setFacDept(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl text-xs bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Designation / Position
+                  </label>
+                  <select
+                    value={facPosition}
+                    onChange={(e) => setFacPosition(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="Faculty Coordinator">Faculty Coordinator</option>
+                    <option value="Club Mentor">Club Mentor</option>
+                    <option value="Professor">Professor</option>
+                    <option value="Associate Professor">Associate Professor</option>
+                    <option value="Placement Advisor">Placement Advisor</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Assigned Club
+                  </label>
+                  <select
+                    value={facClub}
+                    onChange={(e) => setFacClub(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    {clubs.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Login Password (Default: Roll Number / Faculty ID)
+                </label>
+                <input
+                  type="password"
+                  placeholder="Leave blank to use Faculty ID as password"
+                  value={facPass}
+                  onChange={(e) => setFacPass(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-white border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={creatingFaculty}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.01]"
+              >
+                {creatingFaculty ? 'Submitting...' : 'Submit'}
+              </button>
+            </form>
+
+            {/* List of currently created faculty accounts */}
+            <div className="pt-4 border-t border-slate-100">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Created Faculty Members in Database ({users.filter(u => u.role === 'faculty').length})
+              </h3>
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
+                    <tr>
+                      <th className="px-4 py-2.5">Faculty ID / Roll</th>
+                      <th className="px-4 py-2.5">Name</th>
+                      <th className="px-4 py-2.5">Department</th>
+                      <th className="px-4 py-2.5">Position</th>
+                      <th className="px-4 py-2.5">Assigned Club</th>
+                      <th className="px-4 py-2.5 text-right">Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {users.filter(u => u.role === 'faculty').map(fac => (
+                      <tr key={fac.uid} className="hover:bg-slate-50">
+                        <td className="px-4 py-2.5 font-mono font-bold text-purple-600">
+                          {fac.facultyId || fac.rollNumber || 'FAC'}
+                        </td>
+                        <td className="px-4 py-2.5 font-bold text-slate-900">{fac.displayName}</td>
+                        <td className="px-4 py-2.5">{fac.department}</td>
+                        <td className="px-4 py-2.5 font-semibold">{fac.position}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-bold">
+                            {fac.club || 'All Clubs'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Remove faculty member ${fac.displayName}?`)) {
+                                await deleteSystemUser(fac.uid);
+                              }
+                            }}
+                            className="p-1 rounded text-slate-400 hover:text-slate-900"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -565,9 +918,9 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                 <button
                   type="submit"
                   disabled={addingClub}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                 >
-                  {addingClub ? 'Adding...' : 'Add Category'}
+                  {addingClub ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </form>
@@ -615,6 +968,11 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* 6. VERCEL MULTI-LINK CONFIGURATIONS */}
+      {adminTab === 'vercel_deploy' && (
+        <VercelHostGuide />
       )}
 
       {/* Add User Modal */}
@@ -676,7 +1034,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
 
               <div className="pt-3 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsAddUserModalOpen(false)} className="px-4 py-2 rounded-xl text-xs text-slate-600 hover:bg-slate-100">Cancel</button>
-                <button type="submit" disabled={savingUser} className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white">{savingUser ? 'Saving...' : 'Add Member'}</button>
+                <button type="submit" disabled={savingUser} className="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50">{savingUser ? 'Submitting...' : 'Submit'}</button>
               </div>
             </form>
           </div>

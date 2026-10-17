@@ -29,15 +29,27 @@ export const subscribeToClubEvents = (
   onData: (events: ClubEventAgenda[]) => void,
   onError?: (err: Error) => void
 ) => {
-  const q = query(collection(db, CLUB_EVENTS_COLLECTION), orderBy('createdAt', 'desc'));
+  const colRef = collection(db, CLUB_EVENTS_COLLECTION);
 
   return onSnapshot(
-    q,
+    colRef,
     (snap) => {
       const list: ClubEventAgenda[] = [];
       snap.forEach((d) => {
-        list.push(d.data() as ClubEventAgenda);
+        const data = d.data() as ClubEventAgenda;
+        // Restore cached large file contents if saved locally
+        if (data.files && data.files.length > 0) {
+          data.files = data.files.map(f => {
+            const cached = localStorage.getItem(`file_store_${f.id}`);
+            if (cached) {
+              return { ...f, dataUrl: cached };
+            }
+            return f;
+          });
+        }
+        list.push(data);
       });
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       onData(list);
     },
     (err) => {
@@ -115,8 +127,25 @@ export const createClubEventAgenda = async (
   const id = `clevt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
+  // Protect against Firestore document size limit (1MB max per document)
+  const safeFiles = (eventData.files || []).map(f => {
+    if (f.dataUrl && f.dataUrl.length > 300000) {
+      try {
+        localStorage.setItem(`file_store_${f.id}`, f.dataUrl);
+      } catch (e) {
+        // Ignored
+      }
+      return {
+        ...f,
+        dataUrl: f.dataUrl.substring(0, 500) + '...[cached]',
+      };
+    }
+    return f;
+  });
+
   const newEvent: ClubEventAgenda = {
     ...eventData,
+    files: safeFiles,
     id,
     status: 'pending_secretary_approval',
     createdAt: now,
@@ -124,7 +153,7 @@ export const createClubEventAgenda = async (
   };
 
   await setDoc(doc(db, CLUB_EVENTS_COLLECTION, id), newEvent);
-  return newEvent;
+  return { ...newEvent, files: eventData.files };
 };
 
 export const reviewEventBySecretary = async (

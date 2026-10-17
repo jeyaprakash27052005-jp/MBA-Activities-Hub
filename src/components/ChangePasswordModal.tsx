@@ -77,8 +77,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
         )}
 
         {errorMessage && (
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500" />
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -150,9 +150,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
+              className="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
             >
-              {saving ? 'Updating...' : 'Save Updates'}
+              {saving ? 'Submitting...' : 'Submit'}
             </button>
           </div>
         </form>

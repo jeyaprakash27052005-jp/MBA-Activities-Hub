@@ -39,6 +39,15 @@ export const subscribeToUsers = (
   );
 };
 
+export const isValidStudentRollNumber = (rollNo: string): boolean => {
+  if (!rollNo) return false;
+  const clean = rollNo.trim().toUpperCase();
+  const match = clean.match(/^25MBA(\d{3})$/);
+  if (!match) return false;
+  const num = parseInt(match[1], 10);
+  return num >= 1 && num <= 175;
+};
+
 export const findUserByRollNumber = async (rollNo: string): Promise<UserProfile | null> => {
   const cleanRoll = rollNo.trim().toUpperCase();
   try {
@@ -131,29 +140,10 @@ export const generateStudentCohort = async (
   let createdCount = 0;
   const now = new Date().toISOString();
 
-  // Positions pool to demonstrate position-wise features
-  const specialPositions: Record<number, string> = {
-    1: 'Class Representative (CR)',
-    2: 'Vice Class Representative',
-    5: 'Placement Student Coordinator',
-    8: 'Consulting & Strategy Club Lead',
-    12: 'Finance & FinTech Club Secretary',
-    18: 'Marketing Club President',
-    25: 'Cultural & Event Secretary',
-    30: 'Alumni Relations Coordinator'
-  };
+  // Positions assigned: Secretary, Executive, or Member
+  const clubsList = ['NISM', 'NIPM', 'Ad Club', 'Student Activity'];
 
-  const sampleNames = [
-    'Aarav Sharma', 'Aditi Verma', 'Akash Patel', 'Ananya Iyer', 'Arjun Nair', 
-    'Bhavna Joshi', 'Chetan Rao', 'Deepika Reddy', 'Devendra Singh', 'Divya Menon', 
-    'Gaurav Saxena', 'Harini Krishnan', 'Ishaan Malhotra', 'Kavita Deshmukh', 'Kiran Kumar', 
-    'Manish Choudhury', 'Meera Bhatt', 'Naveen Rajan', 'Neha Kapoor', 'Nikhil Gupta',
-    'Pooja Hegde', 'Pranav Mukherjee', 'Priya Nambiar', 'Rahul Mehra', 'Rhea Sen',
-    'Rohan Kulkarni', 'Saanvi Trivedi', 'Sanjay Pillai', 'Shreya Agarwal', 'Siddharth Jain',
-    'Sneha Varma', 'Tanvi Mathur', 'Tarun Sethi', 'Varun Anand', 'Vidya Swaminathan'
-  ];
-
-  // Write in batches of 50 (Firestore limit is 500 ops per batch)
+  // Write in batches of 25 (Firestore batch limit safe)
   for (let i = start; i <= end; i += 25) {
     const batch = writeBatch(db);
     const chunkEnd = Math.min(i + 24, end);
@@ -163,7 +153,27 @@ export const generateStudentCohort = async (
       const rollNumber = `${prefix}${rollNumStr}`;
       const uid = `student_${rollNumber.toLowerCase()}`;
       const name = sampleNames[(j - 1) % sampleNames.length] + (j > sampleNames.length ? ` (${j})` : '');
-      const position = specialPositions[j] || 'Student';
+      
+      let position: 'Secretary' | 'Executive' | 'Member' = 'Member';
+      let club = clubsList[(j - 1) % clubsList.length];
+
+      if (j === 1) {
+        position = 'Secretary';
+        club = 'NISM';
+      } else if (j === 2) {
+        position = 'Secretary';
+        club = 'NIPM';
+      } else if (j === 3) {
+        position = 'Secretary';
+        club = 'Ad Club';
+      } else if (j === 4) {
+        position = 'Secretary';
+        club = 'Student Activity';
+      } else if (j >= 5 && j <= 16) {
+        position = 'Executive';
+      } else {
+        position = 'Member';
+      }
 
       const userDocRef = doc(db, USERS_COLLECTION, uid);
       const studentProfile: UserProfile = {
@@ -175,6 +185,7 @@ export const generateStudentCohort = async (
         passwordHash: rollNumber, // Default password is the Roll Number!
         yearOfStudying,
         position,
+        club,
         department: 'MBA General',
         batch: 'MBA Class of 2027',
         status: 'active',
@@ -211,7 +222,7 @@ export const importUsersFromExcelRows = async (rows: any[]): Promise<{ added: nu
     const studentName = normalized['name of student'] || normalized['name'] || normalized['student name'];
     const rollNo = normalized['roll number'] || normalized['roll no'] || normalized['rollnumber'];
     const yearOfStudying = normalized['year of studing'] || normalized['year of studying'] || normalized['year'];
-    const position = normalized['position'] || normalized['role'] || 'Student';
+    let position = normalized['position'] || normalized['role'] || 'Member';
 
     // Check if faculty row: "Name Of Faculty", "Faculty ID", "Department", "position"
     const facultyName = normalized['name of faculty'] || normalized['faculty name'];
@@ -221,6 +232,20 @@ export const importUsersFromExcelRows = async (rows: any[]): Promise<{ added: nu
     if (rollNo) {
       // Student import
       const cleanRoll = String(rollNo).trim().toUpperCase();
+      
+      // Strict validation: must be 25MBA001 to 25MBA175
+      if (!isValidStudentRollNumber(cleanRoll)) {
+        errors.push(`Row ${idx + 1} rejected: Roll number "${cleanRoll}" is invalid. Only 25MBA001 to 25MBA175 are permitted.`);
+        continue;
+      }
+
+      // Map positions to Secretary, Executive, Member
+      const posLower = String(position).trim().toLowerCase();
+      let normalizedPos = 'Member';
+      if (posLower.includes('secretary')) normalizedPos = 'Secretary';
+      else if (posLower.includes('executive')) normalizedPos = 'Executive';
+      else normalizedPos = 'Member';
+
       const name = studentName ? String(studentName).trim() : `Student ${cleanRoll}`;
       const uid = `student_${cleanRoll.toLowerCase()}`;
 
@@ -233,7 +258,7 @@ export const importUsersFromExcelRows = async (rows: any[]): Promise<{ added: nu
           rollNumber: cleanRoll,
           passwordHash: cleanRoll, // default password is Roll Number
           yearOfStudying: yearOfStudying ? String(yearOfStudying).trim() : 'MBA 1st Year',
-          position: position ? String(position).trim() : 'Student',
+          position: normalizedPos,
           department: 'MBA General',
           batch: 'MBA 2025-2027',
           status: 'active',

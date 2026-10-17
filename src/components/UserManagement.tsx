@@ -232,10 +232,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users }) => {
                     <button
                       onClick={() => isAdmin && handleToggleStatus(user)}
                       disabled={!isAdmin}
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
                         user.status === 'active'
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
                       }`}
                     >
                       {user.status === 'active' ? (
@@ -245,7 +245,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users }) => {
                         </>
                       ) : (
                         <>
-                          <XCircle className="w-3 h-3 text-rose-600" />
+                          <XCircle className="w-3 h-3 text-slate-500" />
                           <span>Inactive</span>
                         </>
                       )}
@@ -256,7 +256,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users }) => {
                     <td className="px-5 py-3.5 text-right">
                       <button
                         onClick={() => handleDeleteUser(user)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 transition-colors"
                         title="Remove User"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -377,9 +377,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users }) => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
+                  className="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
                 >
-                  {saving ? 'Adding...' : 'Save to Firestore'}
+                  {saving ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </form>

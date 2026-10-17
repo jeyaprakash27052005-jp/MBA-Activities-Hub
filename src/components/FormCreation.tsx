@@ -204,10 +204,10 @@ export const FormCreation: React.FC<FormCreationProps> = ({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.02]"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{saving ? 'Saving...' : initialForm ? 'Update Form' : 'Save & Publish to Firestore'}</span>
+            <span>{saving ? 'Submitting...' : 'Submit'}</span>
           </button>
         </div>
       </div>
@@ -350,7 +350,7 @@ export const FormCreation: React.FC<FormCreationProps> = ({
 
                     <button
                       onClick={() => removeField(field.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                       title="Remove Field"
                     >
                       <Trash2 className="w-4 h-4" />

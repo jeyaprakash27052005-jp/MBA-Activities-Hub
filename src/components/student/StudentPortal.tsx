@@ -64,10 +64,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-white/20 text-white">
+              <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-white/20 text-white">
                 Roll No: {userProfile?.rollNumber || '25MBA001'}
               </span>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider ${
+              <span className={`px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wider ${
                 isSecretary
                   ? 'bg-amber-400 text-slate-900'
                   : isExecutive
@@ -77,7 +77,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 Position: {position}
               </span>
               {userProfile?.club && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/10 text-white">
+                <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-white/10 text-white">
                   Club: {userProfile.club}
                 </span>
               )}
@@ -195,7 +195,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               return (
                 <div key={ev.id} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700">
                       {ev.club}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800">

@@ -162,9 +162,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setProfileDropdownOpen(false);
                       signOut();
                     }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700"
+                    className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 border-t border-slate-100"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
+                    <LogOut className="w-3.5 h-3.5 text-slate-500" />
                     <span>Sign Out</span>
                   </button>
                 </div>

@@ -213,7 +213,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-200">
               Club Agenda Creation Form
             </span>
             <h2 className="text-xl font-bold text-slate-900 mt-1">
@@ -393,7 +393,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
                       <button 
                         type="button" 
                         onClick={() => setSelectedParticipants(selectedParticipants.filter(x => x.rollNumber !== p.rollNumber))}
-                        className="text-indigo-400 hover:text-rose-600 ml-1"
+                        className="text-indigo-400 hover:text-slate-900 ml-1 font-bold"
                       >
                         &times;
                       </button>
@@ -445,8 +445,8 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
             </label>
 
             {fileError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>{fileError}</span>
               </div>
             )}
@@ -485,7 +485,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
                       ) : file.type === 'video' ? (
                         <Film className="w-4 h-4 text-purple-500 shrink-0" />
                       ) : (
-                        <FileText className="w-4 h-4 text-rose-500 shrink-0" />
+                        <FileText className="w-4 h-4 text-slate-600 shrink-0" />
                       )}
                       <span className="font-semibold text-slate-800 truncate">{file.name}</span>
                       <span className="text-[10px] text-slate-400">
@@ -496,7 +496,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
                     <button
                       type="button"
                       onClick={() => removeFile(file.id)}
-                      className="text-slate-400 hover:text-rose-600 p-1"
+                      className="text-slate-400 hover:text-slate-700 p-1"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -524,9 +524,9 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.01]"
+                className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.01]"
               >
-                {submitting ? 'Submitting...' : 'Submit Event for Secretary Approval'}
+                {submitting ? 'Submitting...' : 'Submit'}
               </button>
             </div>
           </div>

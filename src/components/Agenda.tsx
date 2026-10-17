@@ -325,7 +325,7 @@ export const Agenda: React.FC<AgendaProps> = ({
                       </button>
                       <button
                         onClick={(e) => handleDelete(act, e)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                         title="Delete Activity"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -377,7 +377,7 @@ export const Agenda: React.FC<AgendaProps> = ({
                   <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                     <div 
                       className={`h-full rounded-full transition-all ${
-                        percentFull >= 90 ? 'bg-rose-500' : percentFull >= 60 ? 'bg-amber-500' : 'bg-indigo-600'
+                        percentFull >= 90 ? 'bg-indigo-700' : percentFull >= 60 ? 'bg-amber-500' : 'bg-indigo-600'
                       }`}
                       style={{ width: `${percentFull}%` }}
                     />
@@ -704,9 +704,9 @@ export const Agenda: React.FC<AgendaProps> = ({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
+                  className="px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : editingActivity ? 'Save Changes' : 'Create Activity'}
+                  {saving ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </form>

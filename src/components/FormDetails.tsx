@@ -443,10 +443,10 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg disabled:opacity-50 transition-all hover:scale-[1.02]"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg disabled:opacity-50 transition-all hover:scale-[1.02]"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? 'Submitting to Firestore...' : 'Submit Form'}</span>
+                  <span>{submitting ? 'Submitting...' : 'Submit'}</span>
                 </button>
               </div>
             </form>

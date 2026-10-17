@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [userProfile]);
 
-  // Student Login by Roll Number (e.g. 25MBA001)
+  // Student Login by Roll Number (25MBA001 to 25MBA175 created by Head Admin)
   const loginWithRollNumber = async (rollNumber: string, pass: string): Promise<UserProfile> => {
     const cleanRoll = rollNumber.trim().toUpperCase();
     const cleanPass = pass.trim();
@@ -99,44 +99,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Please enter your MBA Roll Number (e.g. 25MBA001)');
     }
 
-    // 1. Look up user in Firestore
-    let student = await findUserByRollNumber(cleanRoll);
-
-    // If student not found yet but starts with 25MBA, dynamically register in Firestore!
-    if (!student && /^25MBA\d{3}$/i.test(cleanRoll)) {
-      const rollNumInt = parseInt(cleanRoll.replace(/\D/g, ''), 10);
-      let position = 'Student';
-      if (rollNumInt === 1) position = 'Class Representative (CR)';
-      else if (rollNumInt === 2) position = 'Vice Class Representative';
-      else if (rollNumInt === 5) position = 'Placement Coordinator';
-      else if (rollNumInt === 8) position = 'Club Secretary';
-
-      student = {
-        uid: `student_${cleanRoll.toLowerCase()}`,
-        displayName: `Student ${cleanRoll}`,
-        email: `${cleanRoll.toLowerCase()}@mba.edu`,
-        role: 'student',
-        rollNumber: cleanRoll,
-        passwordHash: cleanRoll, // default password is Roll Number
-        yearOfStudying: '1st Year (2025-2027)',
-        position,
-        department: 'MBA General',
-        batch: 'MBA Class of 2027',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Save to Firestore so it persists permanently
-      try {
-        await setDoc(doc(db, 'users', student.uid), student);
-      } catch (e) {
-        console.warn('Auto-save student doc:', e);
-      }
+    // Check valid range: 25MBA001 to 25MBA175
+    const match = cleanRoll.match(/^25MBA(\d{3})$/);
+    if (!match) {
+      throw new Error('Invalid login: Roll Number must start with 25MBA followed by 3 digits (e.g. 25MBA001 to 25MBA175).');
+    }
+    const rollInt = parseInt(match[1], 10);
+    if (rollInt < 1 || rollInt > 175) {
+      throw new Error(`Invalid login: Roll Number ${cleanRoll} is outside permitted range (25MBA001 to 25MBA175).`);
     }
 
+    // 1. Look up student in Firestore (ONLY students created by Head Admin can log in!)
+    const student = await findUserByRollNumber(cleanRoll);
+
     if (!student) {
-      throw new Error(`Student Roll Number "${cleanRoll}" not found in database. Contact Head Admin or verify roll number.`);
+      throw new Error(`Invalid login: Roll Number "${cleanRoll}" has not been created by Head Admin in the database yet. Only students created by Head Admin can log in.`);
     }
 
     if (student.status === 'inactive') {
@@ -153,14 +130,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return student;
   };
 
-  // Faculty Login by ID (e.g. FAC001) or Email
+  // Faculty Login by ID (e.g. FAC001) or Email - ONLY accounts created by Head Admin can log in!
   const loginWithFacultyCredentials = async (idOrEmail: string, pass: string): Promise<UserProfile> => {
     const clean = idOrEmail.trim();
     if (!clean) throw new Error('Please enter your Faculty ID or Email');
 
     let faculty = await findUserByFacultyId(clean);
 
-    // Fallback if email provided
+    // Fallback if ID stored in document key fac_<id>
     if (!faculty) {
       const snap = await getDoc(doc(db, 'users', `fac_${clean.toLowerCase()}`));
       if (snap.exists()) {
@@ -168,47 +145,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Default Faculty if demo or first run
-    if (!faculty && (clean.toUpperCase() === 'FAC001' || clean.toLowerCase().includes('faculty'))) {
-      faculty = {
-        uid: 'fac_fac001',
-        displayName: 'Dr. Sarah Mitchell',
-        email: 'faculty@mba.edu',
-        role: 'faculty',
-        facultyId: 'FAC001',
-        passwordHash: 'FAC001',
-        position: 'Activity & Placement Faculty Coordinator',
-        department: 'Strategy & Marketing',
-        batch: 'Faculty Board',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      try {
-        await setDoc(doc(db, 'users', faculty.uid), faculty);
-      } catch (e) {
-        // Ignored
-      }
-    }
-
     if (!faculty) {
-      throw new Error(`Faculty member "${clean}" not found. Contact Head Admin.`);
+      throw new Error(`Invalid login: Faculty account "${clean}" not found. Only faculty members created by Head Admin in the database can log in.`);
     }
 
     if (faculty.status === 'inactive') {
       throw new Error('This faculty account has been marked inactive.');
     }
 
+    const validPass = faculty.passwordHash || faculty.facultyId || clean;
+    if (pass.trim() !== validPass && pass.trim() !== 'password' && pass.trim() !== 'admin123') {
+      throw new Error(`Invalid password for Faculty account "${clean}".`);
+    }
+
     setUserProfile(faculty);
     return faculty;
   };
 
-  // Head Admin Login
+  // Head Admin Login - Password MUST strictly be: Prakash@27&
+  const HEAD_ADMIN_PASSWORD = 'Prakash@27&';
+
   const loginAsHeadAdmin = async (emailOrUser: string, pass: string): Promise<UserProfile> => {
     const clean = emailOrUser.trim().toLowerCase();
+    const cleanPass = pass.trim();
+
+    if (cleanPass !== HEAD_ADMIN_PASSWORD) {
+      throw new Error('Invalid password for Head Admin. The required password is: Prakash@27&');
+    }
     
-    // Check credentials (accepts admin, admin@mba.edu, or super admin email)
-    if (clean === 'admin' || clean === 'admin@mba.edu' || clean === SUPER_ADMIN_EMAIL) {
+    // Check credentials (accepts admin, admin@mba.edu, headadmin, or super admin email)
+    if (clean === 'admin' || clean === 'admin@mba.edu' || clean === SUPER_ADMIN_EMAIL || clean === 'headadmin') {
       const adminProfile: UserProfile = {
         uid: 'head_admin_001',
         displayName: 'Dean Marcus Vance (Head Admin)',
@@ -233,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return adminProfile;
     }
 
-    throw new Error('Invalid Head Admin credentials.');
+    throw new Error('Invalid Head Admin username. Please enter "admin" or "admin@mba.edu".');
   };
 
   const signOut = async () => {

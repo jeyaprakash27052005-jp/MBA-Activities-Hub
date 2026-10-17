@@ -14,7 +14,8 @@ import {
   Download,
   AlertCircle,
   Tag,
-  Search
+  Search,
+  Check
 } from 'lucide-react';
 import { Activity, ClubCategory, ClubEventAgenda, DynamicForm, FeatureAccessControls, UserProfile } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -57,20 +58,28 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
   const [newClubDesc, setNewClubDesc] = useState('');
   const [addingClub, setAddingClub] = useState(false);
 
-  // Position selection: Secretary, Executive, Member
-  const handleUpdatePosition = async (u: UserProfile, newPos: string) => {
+  // Explicit submit button state for position allocation
+  const [editingPositions, setEditingPositions] = useState<Record<string, { position: string; club: string }>>({});
+  const [submittingPositionUid, setSubmittingPositionUid] = useState<string | null>(null);
+  const [savedPositionSuccessUid, setSavedPositionSuccessUid] = useState<string | null>(null);
+
+  const handleSubmitPosition = async (st: UserProfile) => {
+    const chosen = editingPositions[st.uid] || { 
+      position: st.position || 'Member', 
+      club: st.club || 'NISM' 
+    };
+    setSubmittingPositionUid(st.uid);
     try {
-      await updateSystemUser(u.uid, { position: newPos });
+      await updateSystemUser(st.uid, {
+        position: chosen.position,
+        club: chosen.club,
+      });
+      setSavedPositionSuccessUid(st.uid);
+      setTimeout(() => setSavedPositionSuccessUid(null), 2500);
     } catch (err: any) {
       alert('Failed to update position: ' + err.message);
-    }
-  };
-
-  const handleUpdateClub = async (u: UserProfile, newClub: string) => {
-    try {
-      await updateSystemUser(u.uid, { club: newClub });
-    } catch (err: any) {
-      alert('Failed to update club: ' + err.message);
+    } finally {
+      setSubmittingPositionUid(null);
     }
   };
 
@@ -106,7 +115,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
       <div className="rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-sky-700 p-6 text-white shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-lg text-xs font-bold bg-white/20 text-white mb-2">
               <Building className="w-3.5 h-3.5" />
               <span>MBA Faculty Advisor Workspace</span>
             </div>
@@ -210,37 +219,82 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                   <th className="px-4 py-3">Student Name</th>
                   <th className="px-4 py-3">Position Selection</th>
                   <th className="px-4 py-3">Assigned Club</th>
+                  <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredStudents.slice(0, 100).map((st) => (
-                  <tr key={st.uid} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono font-bold text-blue-600">{st.rollNumber}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{st.displayName}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={st.position || 'Member'}
-                        onChange={(e) => handleUpdatePosition(st, e.target.value)}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800"
-                      >
-                        <option value="Secretary">Secretary (Can Approve Events)</option>
-                        <option value="Executive">Executive (Selects 8 Participants)</option>
-                        <option value="Member">Member (Normal Member)</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={st.club || 'NISM'}
-                        onChange={(e) => handleUpdateClub(st, e.target.value)}
-                        className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
-                      >
-                        {clubs.map(c => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {filteredStudents.slice(0, 100).map((st) => {
+                  const currentPos = editingPositions[st.uid]?.position ?? (st.position || 'Member');
+                  const currentClub = editingPositions[st.uid]?.club ?? (st.club || 'NISM');
+                  const isSaving = submittingPositionUid === st.uid;
+                  const isSaved = savedPositionSuccessUid === st.uid;
+
+                  return (
+                    <tr key={st.uid} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-mono font-bold text-blue-600">{st.rollNumber}</td>
+                      <td className="px-4 py-3 font-bold text-slate-900">{st.displayName}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={currentPos}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingPositions(prev => ({
+                              ...prev,
+                              [st.uid]: {
+                                position: val,
+                                club: prev[st.uid]?.club ?? (st.club || 'NISM'),
+                              }
+                            }));
+                          }}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800"
+                        >
+                          <option value="Secretary">Secretary (Can Approve Events)</option>
+                          <option value="Executive">Executive (Selects 8 Participants)</option>
+                          <option value="Member">Member (Normal Member)</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={currentClub}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditingPositions(prev => ({
+                              ...prev,
+                              [st.uid]: {
+                                position: prev[st.uid]?.position ?? (st.position || 'Member'),
+                                club: val,
+                              }
+                            }));
+                          }}
+                          className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
+                        >
+                          {clubs.map(c => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => handleSubmitPosition(st)}
+                          disabled={isSaving}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center gap-1 transition-all disabled:opacity-50"
+                        >
+                          {isSaving ? (
+                            <span>Submitting...</span>
+                          ) : isSaved ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-white" />
+                              <span>Saved!</span>
+                            </>
+                          ) : (
+                            <span>Submit</span>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -276,9 +330,9 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                 <button
                   type="submit"
                   disabled={addingClub}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                 >
-                  {addingClub ? 'Adding...' : 'Add Club'}
+                  {addingClub ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </form>
