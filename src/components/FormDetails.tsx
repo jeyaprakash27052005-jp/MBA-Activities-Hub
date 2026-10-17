@@ -250,7 +250,7 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
           {isAdmin && (
             <button
               onClick={handleDeleteForm}
-              className="p-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 hover:bg-rose-100"
+              className="p-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 hover:bg-slate-100"
               title="Delete Form"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -327,7 +327,7 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
                 {form.fields.map((field) => (
                   <div key={field.id} className="space-y-2">
                     <label className="block text-sm font-bold text-slate-900 dark:text-white">
-                      {field.label} {field.required && <span className="text-rose-500">*</span>}
+                      {field.label} {field.required && <span className="text-slate-500">*</span>}
                     </label>
 
                     {/* Short Text */}
@@ -546,7 +546,7 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
                           sub.status === 'approved'
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                             : sub.status === 'rejected'
-                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
                             : sub.status === 'waitlisted'
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                             : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
@@ -572,7 +572,7 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
                           </button>
                           <button
                             onClick={() => handleStatusChange(sub.id, 'rejected')}
-                            className="p-1 rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950"
+                            className="p-1 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
                             title="Reject"
                           >
                             <X className="w-4 h-4" />

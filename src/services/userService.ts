@@ -152,7 +152,7 @@ export const generateStudentCohort = async (
       const rollNumStr = String(j).padStart(3, '0');
       const rollNumber = `${prefix}${rollNumStr}`;
       const uid = `student_${rollNumber.toLowerCase()}`;
-      const name = sampleNames[(j - 1) % sampleNames.length] + (j > sampleNames.length ? ` (${j})` : '');
+      const name = `MBA Student ${rollNumStr}`; // placeholder name; Head Admin can re-create with real name
       
       let position: 'Secretary' | 'Executive' | 'Member' = 'Member';
       let club = clubsList[(j - 1) % clubsList.length];

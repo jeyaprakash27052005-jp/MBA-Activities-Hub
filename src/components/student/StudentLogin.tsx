@@ -29,19 +29,6 @@ export const StudentLogin: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (roll: string, pass: string) => {
-    setStudentRoll(roll);
-    setStudentPass(pass);
-    setError(null);
-    setLoading(true);
-    try {
-      await loginWithRollNumber(roll, pass);
-    } catch (err: any) {
-      setError(err?.message || 'Login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-900 font-sans">
@@ -104,7 +91,7 @@ export const StudentLogin: React.FC = () => {
                 Password *
               </label>
               <span className="text-[10px] text-slate-500 font-medium">
-                (Default: your Roll Number)
+                
               </span>
             </div>
             <input
@@ -127,38 +114,6 @@ export const StudentLogin: React.FC = () => {
           </button>
         </form>
 
-        {/* Quick Testing Profiles */}
-        <div className="pt-3 border-t border-slate-100 space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-            Quick 1-Click Student Login (Demo Profiles):
-          </span>
-          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('25MBA001', '25MBA001')}
-              className="p-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-center font-semibold transition-colors"
-            >
-              <div className="font-mono text-indigo-600 font-bold">25MBA001</div>
-              <div className="text-[10px] text-amber-700">Secretary</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('25MBA002', '25MBA002')}
-              className="p-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-center font-semibold transition-colors"
-            >
-              <div className="font-mono text-indigo-600 font-bold">25MBA002</div>
-              <div className="text-[10px] text-emerald-700">Executive</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('25MBA005', '25MBA005')}
-              className="p-1.5 rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-center font-semibold transition-colors"
-            >
-              <div className="font-mono text-indigo-600 font-bold">25MBA005</div>
-              <div className="text-[10px] text-slate-500">Member</div>
-            </button>
-          </div>
-        </div>
 
       </div>
 

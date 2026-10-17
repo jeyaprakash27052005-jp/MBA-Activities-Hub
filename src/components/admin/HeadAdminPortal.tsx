@@ -206,23 +206,21 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     const cleanRoll = newUserRoll.trim().toUpperCase();
 
     // Strict requirement: student roll number MUST be 25MBA001 to 25MBA175
-    if (newUserRole === 'student') {
-      if (!isValidStudentRollNumber(cleanRoll)) {
-        alert('Invalid Student Roll Number! Only roll numbers from 25MBA001 to 25MBA175 can be created.');
-        return;
-      }
+    if (!isValidStudentRollNumber(cleanRoll)) {
+      alert('Invalid Student Roll Number! Only roll numbers from 25MBA001 to 25MBA175 can be created.');
+      return;
     }
 
     setSavingUser(true);
     try {
-      const uid = cleanRoll ? `student_${cleanRoll.toLowerCase()}` : `usr_${Date.now()}`;
+      const uid = `student_${cleanRoll.toLowerCase()}`;
       await createSystemUser({
         uid,
         displayName: newUserName.trim(),
-        email: newUserEmail.trim() || `${cleanRoll ? cleanRoll.toLowerCase() : 'user'}@mba.edu`,
-        role: newUserRole,
-        rollNumber: cleanRoll || undefined,
-        passwordHash: cleanRoll || '123456',
+        email: newUserEmail.trim() || `${cleanRoll.toLowerCase()}@mba.edu`,
+        role: 'student',
+        rollNumber: cleanRoll,
+        passwordHash: cleanRoll, // default password = Roll Number
         position: newUserPosition,
         club: newUserClub,
         yearOfStudying: newUserYear,
@@ -265,7 +263,6 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         email: facEmail.trim() || `${cleanId.toLowerCase()}@mba.edu`,
         role: 'faculty',
         facultyId: cleanId,
-        rollNumber: cleanId,
         passwordHash: facPass.trim() || cleanId, // default password is ID / Roll Number
         position: facPosition,
         club: facClub,
@@ -643,7 +640,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                             ) : isSaved ? (
                               <>
                                 <Check className="w-3.5 h-3.5 text-white" />
-                                <span>Saved!</span>
+                                <span>Submitted</span>
                               </>
                             ) : (
                               <span>Submit</span>
@@ -994,9 +991,10 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Roll Number (25MBA001 to 25MBA175)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Roll Number * (25MBA001 to 25MBA175)</label>
                 <input
                   type="text"
+                  required
                   placeholder="25MBA..."
                   value={newUserRoll}
                   onChange={(e) => setNewUserRoll(e.target.value.toUpperCase())}

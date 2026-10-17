@@ -27,19 +27,6 @@ export const FacultyLogin: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (id: string, pass: string) => {
-    setFacultyId(id);
-    setFacultyPass(pass);
-    setError(null);
-    setLoading(true);
-    try {
-      await loginWithFacultyCredentials(id, pass);
-    } catch (err: any) {
-      setError(err?.message || 'Faculty login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-900 font-sans">
@@ -115,23 +102,6 @@ export const FacultyLogin: React.FC = () => {
           </button>
         </form>
 
-        {/* Quick Testing Profile */}
-        <div className="pt-3 border-t border-slate-100 space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-            Quick 1-Click Faculty Demo Login:
-          </span>
-          <button
-            type="button"
-            onClick={() => handleQuickLogin('FAC001', 'FAC001')}
-            className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-left font-semibold transition-colors flex items-center justify-between text-xs"
-          >
-            <div>
-              <div className="font-bold text-slate-800">Dr. S. Ramanathan</div>
-              <div className="text-[11px] text-slate-500 font-mono">ID: FAC001 &bull; Password: FAC001</div>
-            </div>
-            <span className="text-[11px] font-bold text-blue-600">Submit &rarr;</span>
-          </button>
-        </div>
 
       </div>
 

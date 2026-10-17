@@ -31,6 +31,11 @@ service cloud.firestore {
     // Student Event Agendas with 8 participants and file attachments
     match /club_events/{eventId} {
       allow read, write: if true;
+
+      // File data stored in chunks so every portal can download uploaded files
+      match /file_chunks/{chunkId} {
+        allow read, write: if true;
+      }
     }
 
     // Club Categories (NISM, NIPM, Ad Club, Student Activity, and custom)

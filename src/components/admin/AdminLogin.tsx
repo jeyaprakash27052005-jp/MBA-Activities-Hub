@@ -27,19 +27,6 @@ export const AdminLogin: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async () => {
-    setAdminUser('admin');
-    setAdminPass('Prakash@27&');
-    setError(null);
-    setLoading(true);
-    try {
-      await loginAsHeadAdmin('admin', 'Prakash@27&');
-    } catch (err: any) {
-      setError(err?.message || 'Head Admin login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-900 font-sans">
@@ -98,7 +85,7 @@ export const AdminLogin: React.FC = () => {
             <input
               type="password"
               required
-              placeholder="Enter password (Prakash@27&)"
+              placeholder="Enter password"
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -115,23 +102,6 @@ export const AdminLogin: React.FC = () => {
           </button>
         </form>
 
-        {/* Quick Testing Profile */}
-        <div className="pt-3 border-t border-slate-100 space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-            Quick 1-Click Master Admin Login:
-          </span>
-          <button
-            type="button"
-            onClick={handleQuickLogin}
-            className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-slate-200 text-left font-semibold transition-colors flex items-center justify-between text-xs"
-          >
-            <div>
-              <div className="font-bold text-slate-800">Master Institutional Admin</div>
-              <div className="text-[11px] text-slate-500 font-mono">User: admin &bull; Password: Prakash@27&</div>
-            </div>
-            <span className="text-[11px] font-bold text-purple-600">Submit &rarr;</span>
-          </button>
-        </div>
 
       </div>
 

@@ -483,7 +483,7 @@ export const FormCreation: React.FC<FormCreationProps> = ({
             {fields.map((field) => (
               <div key={field.id} className="space-y-2">
                 <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
-                  {field.label} {field.required && <span className="text-rose-500">*</span>}
+                  {field.label} {field.required && <span className="text-slate-500">*</span>}
                 </label>
 
                 {field.type === 'text' && (
@@ -559,7 +559,7 @@ export const FormCreation: React.FC<FormCreationProps> = ({
               disabled
               className="px-6 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white opacity-60 cursor-not-allowed"
             >
-              Submit Response (Preview Mode)
+              Submit
             </button>
           </div>
         </div>

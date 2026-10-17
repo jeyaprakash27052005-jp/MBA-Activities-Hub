@@ -285,7 +285,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                           ) : isSaved ? (
                             <>
                               <Check className="w-3.5 h-3.5 text-white" />
-                              <span>Saved!</span>
+                              <span>Submitted</span>
                             </>
                           ) : (
                             <span>Submit</span>

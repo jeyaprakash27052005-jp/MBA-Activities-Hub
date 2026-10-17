@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   User as FirebaseUser,
-  onAuthStateChanged,
   signOut as fbSignOut
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -30,7 +29,7 @@ const SUPER_ADMIN_EMAIL = 'jeyaprakash27052005@gmail.com';
 const STORAGE_KEY = 'mba_portal_active_user';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [currentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -49,45 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, [userProfile]);
-
-  // Firebase auth state observer (for Google Sign In or Firebase accounts)
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setCurrentUser(fbUser);
-      if (fbUser && !userProfile) {
-        try {
-          const snap = await getDoc(doc(db, 'users', fbUser.uid));
-          if (snap.exists()) {
-            const data = snap.data() as UserProfile;
-            setUserProfile(data);
-          } else {
-            const isSuper = fbUser.email === SUPER_ADMIN_EMAIL;
-            const newProfile: UserProfile = {
-              uid: fbUser.uid,
-              displayName: fbUser.displayName || 'MBA Member',
-              email: fbUser.email || '',
-              role: isSuper ? 'admin' : 'faculty',
-              position: isSuper ? 'Head Admin' : 'Faculty Member',
-              department: 'Management Studies',
-              batch: '2025-2027',
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await setDoc(doc(db, 'users', fbUser.uid), newProfile);
-            if (isSuper) {
-              await setDoc(doc(db, 'admins', fbUser.uid), { uid: fbUser.uid, email: fbUser.email, grantedAt: new Date().toISOString() });
-            }
-            setUserProfile(newProfile);
-          }
-        } catch (err) {
-          console.warn('Firebase user sync note:', err);
-        }
-      }
-    });
-
-    return () => unsubscribe();
   }, [userProfile]);
 
   // Student Login by Roll Number (25MBA001 to 25MBA175 created by Head Admin)
@@ -109,21 +69,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(`Invalid login: Roll Number ${cleanRoll} is outside permitted range (25MBA001 to 25MBA175).`);
     }
 
-    // 1. Look up student in Firestore (ONLY students created by Head Admin can log in!)
+    // Look up student in Firestore (ONLY students created by Head Admin can log in!)
     const student = await findUserByRollNumber(cleanRoll);
 
-    if (!student) {
-      throw new Error(`Invalid login: Roll Number "${cleanRoll}" has not been created by Head Admin in the database yet. Only students created by Head Admin can log in.`);
+    if (!student || student.role !== 'student') {
+      throw new Error('Invalid login: this Roll Number has not been created by the Head Admin.');
     }
 
     if (student.status === 'inactive') {
-      throw new Error('This student account has been marked inactive by the Head Admin.');
+      throw new Error('Invalid login: this account has been deactivated by the Head Admin.');
     }
 
-    // Verify Password: default is the Roll Number itself, or custom password
+    // Password is whatever the Head Admin set (defaults to the Roll Number at creation time)
     const validPass = student.passwordHash || student.rollNumber;
-    if (cleanPass !== validPass && cleanPass !== cleanRoll && cleanPass !== 'password' && cleanPass !== '123456') {
-      throw new Error(`Invalid password for Roll Number ${cleanRoll}. (Default password is your Roll Number)`);
+    if (!validPass || cleanPass !== validPass) {
+      throw new Error('Invalid login: incorrect Roll Number or password.');
     }
 
     setUserProfile(student);
@@ -145,17 +105,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (!faculty) {
-      throw new Error(`Invalid login: Faculty account "${clean}" not found. Only faculty members created by Head Admin in the database can log in.`);
+    if (!faculty || faculty.role !== 'faculty') {
+      throw new Error('Invalid login: this Faculty account has not been created by the Head Admin.');
     }
 
     if (faculty.status === 'inactive') {
-      throw new Error('This faculty account has been marked inactive.');
+      throw new Error('Invalid login: this account has been deactivated by the Head Admin.');
     }
 
-    const validPass = faculty.passwordHash || faculty.facultyId || clean;
-    if (pass.trim() !== validPass && pass.trim() !== 'password' && pass.trim() !== 'admin123') {
-      throw new Error(`Invalid password for Faculty account "${clean}".`);
+    const validPass = faculty.passwordHash || faculty.facultyId;
+    if (!validPass || pass.trim() !== validPass) {
+      throw new Error('Invalid login: incorrect Faculty ID or password.');
     }
 
     setUserProfile(faculty);
@@ -169,12 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const clean = emailOrUser.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    if (cleanPass !== HEAD_ADMIN_PASSWORD) {
-      throw new Error('Invalid password for Head Admin. The required password is: Prakash@27&');
+    const userOk = clean === 'admin' || clean === 'admin@mba.edu' || clean === SUPER_ADMIN_EMAIL || clean === 'headadmin';
+    if (cleanPass !== HEAD_ADMIN_PASSWORD || !userOk) {
+      throw new Error('Invalid login: Head Admin username or password is incorrect.');
     }
-    
-    // Check credentials (accepts admin, admin@mba.edu, headadmin, or super admin email)
-    if (clean === 'admin' || clean === 'admin@mba.edu' || clean === SUPER_ADMIN_EMAIL || clean === 'headadmin') {
+
+    {
       const adminProfile: UserProfile = {
         uid: 'head_admin_001',
         displayName: 'Dean Marcus Vance (Head Admin)',
@@ -199,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return adminProfile;
     }
 
-    throw new Error('Invalid Head Admin username. Please enter "admin" or "admin@mba.edu".');
   };
 
   const signOut = async () => {

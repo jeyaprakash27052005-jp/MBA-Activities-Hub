@@ -35,7 +35,8 @@ export interface EventFileAttachment {
   name: string;
   type: 'ppt' | 'video' | 'pdf' | 'other';
   size: number;
-  dataUrl: string;
+  dataUrl: string;           // only held in memory before upload; stored in Firestore chunks afterwards
+  chunkCount?: number;       // number of Firestore chunk docs holding this file's data
   uploadedAt: string;
   uploadedByName: string;
   uploadedByRoll: string;

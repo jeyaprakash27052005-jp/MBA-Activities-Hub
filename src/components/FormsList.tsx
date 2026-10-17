@@ -182,7 +182,7 @@ export const FormsList: React.FC<FormsListProps> = ({
                   {isAdmin && (
                     <button
                       onClick={(e) => handleDelete(form, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                       title="Delete Form"
                     >
                       <Trash2 className="w-4 h-4" />

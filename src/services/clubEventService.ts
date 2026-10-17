@@ -9,7 +9,8 @@ import {
   onSnapshot, 
   query, 
   orderBy,
-  where
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ClubCategory, ClubEventAgenda, EventApprovalStatus, EventFileAttachment, EventParticipant } from '../types';
@@ -37,16 +38,6 @@ export const subscribeToClubEvents = (
       const list: ClubEventAgenda[] = [];
       snap.forEach((d) => {
         const data = d.data() as ClubEventAgenda;
-        // Restore cached large file contents if saved locally
-        if (data.files && data.files.length > 0) {
-          data.files = data.files.map(f => {
-            const cached = localStorage.getItem(`file_store_${f.id}`);
-            if (cached) {
-              return { ...f, dataUrl: cached };
-            }
-            return f;
-          });
-        }
         list.push(data);
       });
       list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
@@ -121,31 +112,85 @@ export const getActiveSelectedParticipantRolls = (allEvents: ClubEventAgenda[], 
   return booked;
 };
 
+// ---- File storage -------------------------------------------------------
+// Firestore documents are capped at 1 MiB, so each file's data URL is split into
+// chunks stored in club_events/{eventId}/file_chunks. This makes every uploaded
+// file available to ALL portals / devices (not just the uploader's browser).
+const CHUNK_SIZE = 700_000;
+const CHUNKS_SUBCOLLECTION = 'file_chunks';
+
+const chunkDocId = (fileId: string, index: number) => `${fileId}__${String(index).padStart(4, '0')}`;
+
+const saveEventFiles = async (
+  eventId: string,
+  files: EventFileAttachment[]
+): Promise<EventFileAttachment[]> => {
+  const stored: EventFileAttachment[] = [];
+
+  for (const f of files) {
+    const data = f.dataUrl || '';
+    const count = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
+
+    // Write chunks in small batches to stay well inside Firestore batch limits
+    for (let start = 0; start < count; start += 6) {
+      const batch = writeBatch(db);
+      for (let i = start; i < Math.min(start + 6, count); i++) {
+        batch.set(
+          doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(f.id, i)),
+          { fileId: f.id, index: i, data: data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE) }
+        );
+      }
+      await batch.commit();
+    }
+
+    stored.push({ ...f, dataUrl: '', chunkCount: count });
+  }
+
+  return stored;
+};
+
+const deleteEventFileChunks = async (eventId: string, files: EventFileAttachment[]) => {
+  for (const f of files) {
+    const count = f.chunkCount || 0;
+    for (let i = 0; i < count; i++) {
+      try {
+        await deleteDoc(doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(f.id, i)));
+      } catch (e) {
+        // Ignored
+      }
+    }
+  }
+};
+
+// Reassembles a file's data URL from Firestore (works from any portal / device)
+export const fetchEventFileDataUrl = async (
+  eventId: string,
+  file: EventFileAttachment
+): Promise<string> => {
+  if (file.dataUrl && file.dataUrl.startsWith('data:')) return file.dataUrl;
+  const count = file.chunkCount || 0;
+  if (count === 0) throw new Error('File data not found in database.');
+
+  const parts: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const snap = await getDoc(doc(db, CLUB_EVENTS_COLLECTION, eventId, CHUNKS_SUBCOLLECTION, chunkDocId(file.id, i)));
+    if (!snap.exists()) throw new Error('File data is incomplete in database.');
+    parts.push((snap.data() as { data: string }).data);
+  }
+  return parts.join('');
+};
+
 export const createClubEventAgenda = async (
   eventData: Omit<ClubEventAgenda, 'id' | 'createdAt' | 'updatedAt' | 'status'>
 ): Promise<ClubEventAgenda> => {
   const id = `clevt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
-  // Protect against Firestore document size limit (1MB max per document)
-  const safeFiles = (eventData.files || []).map(f => {
-    if (f.dataUrl && f.dataUrl.length > 300000) {
-      try {
-        localStorage.setItem(`file_store_${f.id}`, f.dataUrl);
-      } catch (e) {
-        // Ignored
-      }
-      return {
-        ...f,
-        dataUrl: f.dataUrl.substring(0, 500) + '...[cached]',
-      };
-    }
-    return f;
-  });
+  const storedFiles = await saveEventFiles(id, eventData.files || []);
 
   const newEvent: ClubEventAgenda = {
     ...eventData,
-    files: safeFiles,
+    files: storedFiles,
     id,
     status: 'pending_secretary_approval',
     createdAt: now,
@@ -153,7 +198,7 @@ export const createClubEventAgenda = async (
   };
 
   await setDoc(doc(db, CLUB_EVENTS_COLLECTION, id), newEvent);
-  return { ...newEvent, files: eventData.files };
+  return newEvent;
 };
 
 export const reviewEventBySecretary = async (
@@ -218,9 +263,16 @@ export const reuploadEventFiles = async (
   const docRef = doc(db, CLUB_EVENTS_COLLECTION, eventId);
   const now = new Date().toISOString();
 
+  const existing = await getDoc(docRef);
+  const oldFiles = existing.exists() ? ((existing.data() as ClubEventAgenda).files || []) : [];
+
+  const storedFiles = await saveEventFiles(eventId, newFiles);
+
   await updateDoc(docRef, {
-    files: newFiles,
+    files: storedFiles,
     status: 'pending_secretary_approval', // Re-submits for secretary review
     updatedAt: now,
   });
+
+  await deleteEventFileChunks(eventId, oldFiles);
 };

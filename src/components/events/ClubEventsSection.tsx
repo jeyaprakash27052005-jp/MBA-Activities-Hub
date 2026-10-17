@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { ClubCategory, ClubEventAgenda, EventApprovalStatus, EventFileAttachment, UserProfile } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { reviewEventBySecretary, reuploadEventFiles } from '../../services/clubEventService';
+import { reviewEventBySecretary, reuploadEventFiles, fetchEventFileDataUrl } from '../../services/clubEventService';
 
 interface ClubEventsSectionProps {
   events: ClubEventAgenda[];
@@ -100,13 +100,23 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
     }
   };
 
-  const handleDownloadFile = (file: EventFileAttachment) => {
-    const link = document.createElement('a');
-    link.href = file.dataUrl;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadFile = async (eventId: string, file: EventFileAttachment) => {
+    setDownloadingId(file.id);
+    try {
+      const dataUrl = await fetchEventFileDataUrl(eventId, file);
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      alert('Download failed: ' + err.message);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   // Re-upload files handling
@@ -322,7 +332,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                     <span className="text-[10px] font-mono text-indigo-600">Exclusive Allocation</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-[11px]">
-                    {ev.participants.map((p, idx) => (
+                    {(ev.participants || []).map((p, idx) => (
                       <div key={idx} className="p-1 rounded bg-white border border-indigo-100 truncate">
                         <span className="font-mono font-bold text-indigo-600 mr-1">{p.rollNumber}:</span>
                         <span className="text-slate-800">{p.name}</span>
@@ -334,10 +344,10 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                 {/* Uploaded Files (PPT, Video, PDF) with Download for Secretary */}
                 <div className="space-y-1.5 pt-1">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                    Attached Files ({ev.files.length}):
+                    Attached Files ({(ev.files || []).length}):
                   </span>
                   <div className="space-y-1">
-                    {ev.files.map((file) => (
+                    {(ev.files || []).map((file) => (
                       <div 
                         key={file.id}
                         className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs"
@@ -356,12 +366,13 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                         {/* Download Option for Secretary & Users */}
                         <button
                           type="button"
-                          onClick={() => handleDownloadFile(file)}
+                          onClick={() => handleDownloadFile(ev.id, file)}
+                          disabled={downloadingId === file.id}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white hover:bg-slate-100 text-indigo-600 border border-slate-200 shadow-2xs transition-colors shrink-0"
                           title="Download file from database"
                         >
                           <Download className="w-3 h-3" />
-                          <span>Download</span>
+                          <span>{downloadingId === file.id ? 'Loading...' : 'Download'}</span>
                         </button>
                       </div>
                     ))}
