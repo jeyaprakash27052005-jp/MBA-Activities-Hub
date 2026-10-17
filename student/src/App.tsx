@@ -31,8 +31,17 @@ function MainApp() {
   // Keep the signed-in profile in sync with the database (e.g. department set by faculty)
   const liveProfile = userProfile ? users.find((u) => u.uid === userProfile.uid) : undefined;
   useEffect(() => {
-    if (liveProfile && userProfile && liveProfile.updatedAt !== userProfile.updatedAt) syncProfile(liveProfile);
-  }, [liveProfile?.updatedAt]);
+    if (!liveProfile || !userProfile) return;
+    const changed =
+      liveProfile.updatedAt !== userProfile.updatedAt ||
+      liveProfile.position !== userProfile.position ||
+      liveProfile.club !== userProfile.club ||
+      liveProfile.department !== userProfile.department ||
+      liveProfile.displayName !== userProfile.displayName ||
+      liveProfile.gender !== userProfile.gender ||
+      liveProfile.status !== userProfile.status;
+    if (changed) syncProfile(liveProfile);
+  }, [liveProfile?.updatedAt, liveProfile?.position, liveProfile?.club, liveProfile?.department, liveProfile?.displayName, liveProfile?.gender, liveProfile?.status]);
 
   if (!userProfile) return <StudentLogin />;
 

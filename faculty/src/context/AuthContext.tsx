@@ -94,10 +94,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!userProfile) return;
-    const updated = { ...userProfile, ...updates, updatedAt: new Date().toISOString() };
-    setUserProfile(updated);
+    const stamp = new Date().toISOString();
+    setUserProfile((prev) => (prev ? { ...prev, ...updates, updatedAt: stamp } : prev));
     try {
-      await setDoc(doc(db, 'users', userProfile.uid), updated, { merge: true });
+      // Write ONLY the changed fields. Writing the whole local copy would overwrite
+      // values changed elsewhere (e.g. a position assigned by faculty) with stale data.
+      await setDoc(doc(db, 'users', userProfile.uid), { ...updates, updatedAt: stamp }, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${userProfile.uid}`);
     }
