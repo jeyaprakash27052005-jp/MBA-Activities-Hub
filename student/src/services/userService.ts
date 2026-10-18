@@ -13,7 +13,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { UserProfile, UserRole } from '../types';
+import { BatchConfig, UserProfile, UserRole } from '../types';
 
 const USERS_COLLECTION = 'users';
 
@@ -39,13 +39,42 @@ export const subscribeToUsers = (
   );
 };
 
-export const isValidStudentRollNumber = (rollNo: string): boolean => {
+export const DEFAULT_BATCHES: BatchConfig[] = [
+  { prefix: '25MBA', start: 1, end: 175, yearOfStudying: '1st Year (2025-2027)' },
+];
+
+const BATCHES_DOC = doc(db, 'settings', 'batches');
+
+const withDefaults = (list: BatchConfig[] | undefined): BatchConfig[] => {
+  const out = [...(list || [])];
+  DEFAULT_BATCHES.forEach((d) => { if (!out.some((b) => b.prefix === d.prefix)) out.unshift(d); });
+  return out;
+};
+
+export const subscribeToBatches = (onData: (batches: BatchConfig[]) => void) =>
+  onSnapshot(
+    BATCHES_DOC,
+    (snap) => onData(withDefaults(snap.exists() ? (snap.data() as { list: BatchConfig[] }).list : [])),
+    () => onData(DEFAULT_BATCHES)
+  );
+
+export const getBatches = async (): Promise<BatchConfig[]> => {
+  try {
+    const snap = await getDoc(BATCHES_DOC);
+    return withDefaults(snap.exists() ? (snap.data() as { list: BatchConfig[] }).list : []);
+  } catch (e) {
+    return DEFAULT_BATCHES;
+  }
+};
+
+// A roll number is valid only if it falls inside a configured batch (25MBA001-175 by default)
+export const isValidStudentRollNumber = (rollNo: string, batches: BatchConfig[] = DEFAULT_BATCHES): boolean => {
   if (!rollNo) return false;
-  const clean = rollNo.trim().toUpperCase();
-  const match = clean.match(/^25MBA(\d{3})$/);
-  if (!match) return false;
-  const num = parseInt(match[1], 10);
-  return num >= 1 && num <= 175;
+  const m = rollNo.trim().toUpperCase().match(/^(\d{2}MBA)(\d{3})$/);
+  if (!m) return false;
+  const num = parseInt(m[2], 10);
+  const batch = batches.find((b) => b.prefix === m[1]);
+  return !!batch && num >= batch.start && num <= batch.end;
 };
 
 export const findUserByRollNumber = async (rollNo: string): Promise<UserProfile | null> => {
@@ -130,7 +159,8 @@ export const deleteSystemUser = async (uid: string): Promise<void> => {
   }
 };
 
-// Generate Full Student Cohort 25MBA001 to 25MBA175
+// Generate a student batch (e.g. 25MBA001-25MBA175). Existing students are left untouched.
+// Everyone starts as a Member (no club); faculty / Head Admin assign Secretary / Executive later.
 export const generateStudentCohort = async (
   prefix: string = '25MBA',
   start: number = 1,
@@ -140,67 +170,76 @@ export const generateStudentCohort = async (
   let createdCount = 0;
   const now = new Date().toISOString();
 
-  // Positions assigned: Secretary, Executive, or Member
-  const clubsList = ['NISM', 'NIPM', 'Ad Club', 'Student Activity'];
+  const existingSnap = await getDocs(query(collection(db, USERS_COLLECTION), where('role', '==', 'student')));
+  const existing = new Set<string>();
+  existingSnap.forEach((d) => existing.add(String((d.data() as UserProfile).rollNumber || '').toUpperCase()));
+
+  const rolls: number[] = [];
+  for (let j = start; j <= end; j++) {
+    if (!existing.has(`${prefix}${String(j).padStart(3, '0')}`)) rolls.push(j);
+  }
 
   // Write in batches of 25 (Firestore batch limit safe)
-  for (let i = start; i <= end; i += 25) {
+  for (let i = 0; i < rolls.length; i += 25) {
     const batch = writeBatch(db);
-    const chunkEnd = Math.min(i + 24, end);
-
-    for (let j = i; j <= chunkEnd; j++) {
+    for (const j of rolls.slice(i, i + 25)) {
       const rollNumStr = String(j).padStart(3, '0');
       const rollNumber = `${prefix}${rollNumStr}`;
       const uid = `student_${rollNumber.toLowerCase()}`;
-      const name = `MBA Student ${rollNumStr}`; // placeholder name; Head Admin can re-create with real name
-      
-      let position: 'Secretary' | 'Executive' | 'Member' = 'Member';
-      let club = clubsList[(j - 1) % clubsList.length];
-
-      if (j === 1) {
-        position = 'Secretary';
-        club = 'NISM';
-      } else if (j === 2) {
-        position = 'Secretary';
-        club = 'NIPM';
-      } else if (j === 3) {
-        position = 'Secretary';
-        club = 'Ad Club';
-      } else if (j === 4) {
-        position = 'Secretary';
-        club = 'Student Activity';
-      } else if (j >= 5 && j <= 16) {
-        position = 'Executive';
-      } else {
-        position = 'Member';
-      }
-
-      const userDocRef = doc(db, USERS_COLLECTION, uid);
       const studentProfile: UserProfile = {
         uid,
-        displayName: name,
+        displayName: `MBA Student ${rollNumStr}`, // placeholder; the student enters their real name on first login
         email: `${rollNumber.toLowerCase()}@mba.edu`,
         role: 'student',
         rollNumber,
-        passwordHash: rollNumber, // Default password is the Roll Number!
+        passwordHash: rollNumber, // Default password is the Roll Number
         yearOfStudying,
-        position,
-        club,
+        position: 'Member',
+        club: '',
         department: 'MBA General',
-        batch: 'MBA Class of 2027',
+        batch: `MBA Batch ${prefix}`,
         status: 'active',
         createdAt: now,
         updatedAt: now,
       };
-
-      batch.set(userDocRef, studentProfile, { merge: true });
+      batch.set(doc(db, USERS_COLLECTION, uid), studentProfile);
       createdCount++;
     }
-
     await batch.commit();
   }
 
   return createdCount;
+};
+
+// Register a NEW batch (next year's roll numbers) and create all its student IDs.
+export const addNextBatch = async (
+  prefix: string,
+  start: number,
+  end: number,
+  yearOfStudying: string
+): Promise<{ created: number; skipped: number }> => {
+  const cleanPrefix = prefix.trim().toUpperCase();
+  if (!/^\d{2}MBA$/.test(cleanPrefix)) {
+    throw new Error('Batch code must be 2 digits followed by MBA, e.g. 26MBA.');
+  }
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start || end > 999) {
+    throw new Error('Enter a valid roll number range (From 1, To up to 999).');
+  }
+  if (!yearOfStudying.trim()) throw new Error('Enter the year of studying for this batch.');
+
+  const list = await getBatches();
+  const existing = list.find((b) => b.prefix === cleanPrefix);
+  const cfg: BatchConfig = {
+    prefix: cleanPrefix,
+    start: existing ? Math.min(existing.start, start) : start,
+    end: existing ? Math.max(existing.end, end) : end,
+    yearOfStudying: yearOfStudying.trim(),
+  };
+  const next = existing ? list.map((b) => (b.prefix === cleanPrefix ? cfg : b)) : [...list, cfg];
+  await setDoc(BATCHES_DOC, { list: next, updatedAt: new Date().toISOString() });
+
+  const created = await generateStudentCohort(cleanPrefix, start, end, yearOfStudying.trim());
+  return { created, skipped: end - start + 1 - created };
 };
 
 // Import from Excel rows
@@ -208,6 +247,7 @@ export const importUsersFromExcelRows = async (rows: any[]): Promise<{ added: nu
   let added = 0;
   const errors: string[] = [];
   const now = new Date().toISOString();
+  const batches = await getBatches();
 
   for (let idx = 0; idx < rows.length; idx++) {
     const row = rows[idx];
@@ -234,8 +274,8 @@ export const importUsersFromExcelRows = async (rows: any[]): Promise<{ added: nu
       const cleanRoll = String(rollNo).trim().toUpperCase();
       
       // Strict validation: must be 25MBA001 to 25MBA175
-      if (!isValidStudentRollNumber(cleanRoll)) {
-        errors.push(`Row ${idx + 1} rejected: Roll number "${cleanRoll}" is invalid. Only 25MBA001 to 25MBA175 are permitted.`);
+      if (!isValidStudentRollNumber(cleanRoll, batches)) {
+        errors.push(`Row ${idx + 1} rejected: Roll number "${cleanRoll}" is invalid. It is not inside any configured batch.`);
         continue;
       }
 

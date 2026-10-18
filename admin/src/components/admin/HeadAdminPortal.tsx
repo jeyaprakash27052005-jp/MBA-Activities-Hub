@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   ToggleLeft, 
@@ -24,17 +24,20 @@ import {
   Building
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Activity, ClubCategory, ClubEventAgenda, DynamicForm, FeatureAccessControls, UserProfile, UserRole } from '../../types';
+import { Activity, BatchConfig, ClubCategory, ClubEventAgenda, DynamicForm, FeatureAccessControls, UserProfile, UserRole } from '../../types';
 import { updateFeatureControls } from '../../services/settingsService';
 import { 
   createSystemUser, 
   updateSystemUser, 
   deleteSystemUser, 
   generateStudentCohort, 
+  subscribeToBatches,
+  DEFAULT_BATCHES,
   importUsersFromExcelRows,
   isValidStudentRollNumber 
 } from '../../services/userService';
 import { addCustomClub } from '../../services/clubEventService';
+import { NextBatchForm } from '../NextBatchForm';
 import { ClubEventsSection } from '../events/ClubEventsSection';
 
 interface HeadAdminPortalProps {
@@ -62,7 +65,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
   onOpenCreateForm,
   onSelectForm,
 }) => {
-  const [adminTab, setAdminTab] = useState<'club_events' | 'access_control' | 'excel_import' | 'users' | 'create_faculty' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
+  const [adminTab, setAdminTab] = useState<'club_events' | 'access_control' | 'excel_import' | 'users' | 'create_faculty' | 'next_batch' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
 
   // Excel Import state
   const [importLoading, setImportLoading] = useState(false);
@@ -106,6 +109,8 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
   const [newUserRoll, setNewUserRoll] = useState('');
   const [newUserPosition, setNewUserPosition] = useState<'Secretary' | 'Executive' | 'Member'>('Member');
   const [newUserClub, setNewUserClub] = useState('NISM');
+  const [batches, setBatches] = useState<BatchConfig[]>(DEFAULT_BATCHES);
+  useEffect(() => subscribeToBatches(setBatches), []);
   const [newUserYear, setNewUserYear] = useState('1st Year (2025-2027)');
   const [newUserDept, setNewUserDept] = useState('MBA General');
   const [savingUser, setSavingUser] = useState(false);
@@ -205,8 +210,8 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     const cleanRoll = newUserRoll.trim().toUpperCase();
 
     // Strict requirement: student roll number MUST be 25MBA001 to 25MBA175
-    if (!isValidStudentRollNumber(cleanRoll)) {
-      alert('Invalid Student Roll Number! Only roll numbers from 25MBA001 to 25MBA175 can be created.');
+    if (!isValidStudentRollNumber(cleanRoll, batches)) {
+      alert('Invalid Student Roll Number! Use a roll number inside a configured batch (e.g. 25MBA001 to 25MBA175). New batches can be added in the Add Next Batch IDs tab.');
       return;
     }
 
@@ -221,7 +226,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         rollNumber: cleanRoll,
         passwordHash: cleanRoll, // default password = Roll Number
         position: newUserPosition,
-        club: newUserClub,
+        club: newUserPosition === 'Member' ? '' : newUserClub,
         yearOfStudying: newUserYear,
         department: newUserDept,
         status: 'active',
@@ -291,7 +296,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     try {
       await updateSystemUser(u.uid, {
         position: chosen.position,
-        club: chosen.club,
+        club: chosen.position === 'Member' ? '' : chosen.club,
       });
       setSavedPositionSuccessUid(u.uid);
       setTimeout(() => setSavedPositionSuccessUid(null), 2500);
@@ -430,6 +435,18 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         </button>
 
         <button
+          onClick={() => setAdminTab('next_batch')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            adminTab === 'next_batch'
+              ? 'bg-purple-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Add Next Batch IDs</span>
+        </button>
+
+        <button
           onClick={() => setAdminTab('clubs_mgmt')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             adminTab === 'clubs_mgmt'
@@ -461,7 +478,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
           events={clubEvents}
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
-          canCreateEvent={true}
+          canCreateEvent={false}
           allStudents={users.filter((u) => u.role === 'student')}
         />
       )}
@@ -600,6 +617,9 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                           </select>
                         </td>
                         <td className="px-4 py-3">
+                          {currentPos === 'Member' ? (
+                            <span className="text-slate-400">&mdash;</span>
+                          ) : (
                           <select
                             value={currentClub}
                             onChange={(e) => {
@@ -618,6 +638,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                               <option key={c.id} value={c.name}>{c.name}</option>
                             ))}
                           </select>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -856,6 +877,9 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
       )}
 
       {/* 4. CLUBS & CATEGORIES MANAGEMENT */}
+      {/* NEXT BATCH STUDENT IDS */}
+      {adminTab === 'next_batch' && <NextBatchForm />}
+
       {adminTab === 'clubs_mgmt' && (
         <div className="space-y-5">
           <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm space-y-4">
@@ -977,7 +1001,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Roll Number * (25MBA001 to 25MBA175)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Roll Number * (e.g. 25MBA001)</label>
                 <input
                   type="text"
                   required
@@ -1013,6 +1037,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                   </select>
                 </div>
 
+                {newUserPosition !== 'Member' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Club</label>
                   <select
@@ -1025,6 +1050,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                     ))}
                   </select>
                 </div>
+                )}
               </div>
 
               <div className="pt-3 flex justify-end gap-2">

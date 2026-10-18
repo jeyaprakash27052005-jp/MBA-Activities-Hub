@@ -12,6 +12,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   currentTab: string;
@@ -58,9 +59,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => setCurrentTab(isAdmin ? 'admin_portal' : isFaculty ? 'faculty_portal' : 'student_portal')}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <GraduationCap className="w-6 h-6" />
-            </div>
+            <BrandLogo
+              className="h-10 w-auto max-w-[56px] object-contain"
+              fallback={
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+              }
+            />
             <div>
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
                 MBA Activities Hub

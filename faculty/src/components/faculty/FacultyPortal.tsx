@@ -21,6 +21,7 @@ import { Activity, ClubCategory, ClubEventAgenda, DynamicForm, FeatureAccessCont
 import { useAuth } from '../../context/AuthContext';
 import { updateSystemUser } from '../../services/userService';
 import { addCustomClub } from '../../services/clubEventService';
+import { NextBatchForm } from '../NextBatchForm';
 import { ClubEventsSection } from '../events/ClubEventsSection';
 
 interface FacultyPortalProps {
@@ -51,7 +52,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
   onSelectActivity,
 }) => {
   const { userProfile } = useAuth();
-  const [facultySubTab, setFacultySubTab] = useState<'club_events' | 'positions' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
+  const [facultySubTab, setFacultySubTab] = useState<'club_events' | 'positions' | 'next_batch' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
 
   const [studentSearch, setStudentSearch] = useState('');
   const [newClubName, setNewClubName] = useState('');
@@ -74,7 +75,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
     try {
       await updateSystemUser(st.uid, {
         position: chosen.position,
-        club: chosen.club,
+        club: chosen.position === 'Member' ? '' : chosen.club,
         ...(department ? { department } : {}),
         ...(displayName ? { displayName } : {}),
       });
@@ -135,15 +136,6 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={onOpenCreateClubEvent}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white text-blue-900 shadow-sm hover:bg-slate-100 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5 text-blue-600" />
-              <span>Create Event Agenda (8 Participants)</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -174,6 +166,18 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
         </button>
 
         <button
+          onClick={() => setFacultySubTab('next_batch')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            facultySubTab === 'next_batch'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Add Next Batch IDs</span>
+        </button>
+
+        <button
           onClick={() => setFacultySubTab('clubs_mgmt')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             facultySubTab === 'clubs_mgmt'
@@ -192,7 +196,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
           events={clubEvents}
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
-          canCreateEvent={true}
+          canCreateEvent={false}
           allStudents={allStudents}
         />
       )}
@@ -281,6 +285,9 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                         </select>
                       </td>
                       <td className="px-4 py-3">
+                        {currentPos === 'Member' ? (
+                          <span className="text-slate-400">&mdash;</span>
+                        ) : (
                         <select
                           value={currentClub}
                           onChange={(e) => {
@@ -300,6 +307,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                             <option key={c.id} value={c.name}>{c.name}</option>
                           ))}
                         </select>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <input
@@ -352,6 +360,9 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
       )}
 
       {/* 3. CLUBS & CATEGORIES MANAGEMENT */}
+      {/* NEXT BATCH STUDENT IDS */}
+      {facultySubTab === 'next_batch' && <NextBatchForm />}
+
       {facultySubTab === 'clubs_mgmt' && (
         <div className="space-y-4">
           <div className="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm space-y-4">

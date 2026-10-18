@@ -57,6 +57,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
   const [reuploadFiles, setReuploadFiles] = useState<EventFileAttachment[]>([]);
   const [reuploadError, setReuploadError] = useState<string | null>(null);
   const [reuploading, setReuploading] = useState(false);
+  const [reuploadPercent, setReuploadPercent] = useState(0);
 
   // Check if current user has Secretary rights (or Admin)
   const isSecretary = 
@@ -178,7 +179,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
 
     setReuploading(true);
     try {
-      await reuploadEventFiles(reuploadEvent.id, reuploadFiles);
+      await reuploadEventFiles(reuploadEvent.id, reuploadFiles, setReuploadPercent);
       setReuploadEvent(null);
       setReuploadFiles([]);
     } catch (err: any) {
@@ -554,7 +555,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                 disabled={reuploading}
                 className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 text-white shadow-sm"
               >
-                {reuploading ? 'Submitting...' : 'Submit'}
+                {reuploading ? `Submitting... ${reuploadPercent}%` : 'Submit'}
               </button>
             </div>
           </div>

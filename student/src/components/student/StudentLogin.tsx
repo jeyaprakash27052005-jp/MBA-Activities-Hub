@@ -8,6 +8,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../BrandLogo';
 
 export const StudentLogin: React.FC = () => {
   const { loginWithRollNumber } = useAuth();
@@ -35,9 +36,11 @@ export const StudentLogin: React.FC = () => {
       
       {/* Brand Header */}
       <div className="text-center mb-6 max-w-md">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20 mb-3">
-          <GraduationCap className="w-8 h-8 text-white" />
-        </div>
+        <BrandLogo className="h-16 w-auto mx-auto mb-3 object-contain" fallback={
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20 mb-3">
+            <GraduationCap className="w-8 h-8 text-white" />
+          </div>
+        } />
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-1">
           MBA Student Login
         </h1>
@@ -49,7 +52,7 @@ export const StudentLogin: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900">Sign in to your Account</h2>
             <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg">
-              25MBA001 - 25MBA175
+              e.g. 25MBA001
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">

@@ -198,3 +198,11 @@ export interface FormSubmission {
   submittedAt: string;
   updatedAt: string;
 }
+
+// A student batch: roll numbers PREFIX + 3 digits, from `start` to `end` (e.g. 25MBA001 - 25MBA175)
+export interface BatchConfig {
+  prefix: string;          // e.g. '25MBA', '26MBA'
+  start: number;
+  end: number;
+  yearOfStudying: string;  // e.g. '1st Year (2025-2027)'
+}

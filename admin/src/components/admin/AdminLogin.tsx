@@ -6,6 +6,7 @@ import {
   Lock 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../BrandLogo';
 
 export const AdminLogin: React.FC = () => {
   const { loginAsHeadAdmin } = useAuth();
@@ -32,9 +33,11 @@ export const AdminLogin: React.FC = () => {
       
       {/* Brand Header */}
       <div className="text-center mb-6 max-w-md">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-purple-500/20 mb-3">
-          <ShieldCheck className="w-8 h-8 text-white" />
-        </div>
+        <BrandLogo className="h-16 w-auto mx-auto mb-3 object-contain" fallback={
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-purple-500/20 mb-3">
+            <ShieldCheck className="w-8 h-8 text-white" />
+          </div>
+        } />
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-1">
           Head Admin Command
         </h1>

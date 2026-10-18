@@ -77,14 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Please enter your MBA Roll Number (e.g. 25MBA001)');
     }
 
-    // Check valid range: 25MBA001 to 25MBA175
-    const match = cleanRoll.match(/^25MBA(\d{3})$/);
-    if (!match) {
-      throw new Error('Invalid login: Roll Number must start with 25MBA followed by 3 digits (e.g. 25MBA001 to 25MBA175).');
-    }
-    const rollInt = parseInt(match[1], 10);
-    if (rollInt < 1 || rollInt > 175) {
-      throw new Error(`Invalid login: Roll Number ${cleanRoll} is outside permitted range (25MBA001 to 25MBA175).`);
+    // Format check only; the account must also exist in the database (created by Head Admin / faculty batch setup)
+    if (!/^\d{2}MBA\d{3}$/.test(cleanRoll)) {
+      throw new Error('Invalid login: Roll Number format is e.g. 25MBA001.');
     }
 
     // Look up student in Firestore (ONLY students created by Head Admin can log in!)

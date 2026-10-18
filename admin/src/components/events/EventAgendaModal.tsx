@@ -57,6 +57,10 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
   const [files, setFiles] = useState<EventFileAttachment[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
+
+  // Only Executives choose the event participants (compulsory: exactly 8)
+  const isExecutiveUser = userProfile?.role === 'student' && (userProfile?.position || '').trim().toLowerCase() === 'executive';
 
   if (!isOpen) return null;
 
@@ -159,6 +163,11 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isExecutiveUser) {
+      alert('Only an Executive can create an event and select its 8 participants.');
+      return;
+    }
+
     if (!title.trim()) {
       alert('Please enter event title');
       return;
@@ -180,6 +189,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
     }
 
     setSubmitting(true);
+    setUploadPercent(0);
     try {
       const inchargeStudent = allStudents.find(s => s.rollNumber === inchargeRoll);
       const created = await createClubEventAgenda({
@@ -197,7 +207,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
         createdExecutiveName: userProfile?.displayName || 'Head Admin',
         participants: selectedParticipants,
         files,
-      });
+      }, setUploadPercent);
 
       onEventCreated(created);
       onClose();
@@ -222,7 +232,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
               Create Club Event & Agenda
             </h2>
             <p className="text-xs text-slate-500">
-              Select 8 participants (hidden from other events), assign Incharge, and upload presentation files.
+              Executive selects exactly 8 participants (compulsory, hidden from other events), assigns the Incharge, and uploads presentation files.
             </p>
           </div>
           <button
@@ -528,7 +538,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
                 disabled={submitting}
                 className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.01]"
               >
-                {submitting ? 'Submitting...' : 'Submit'}
+                {submitting ? `Submitting... ${uploadPercent}%` : 'Submit'}
               </button>
             </div>
           </div>

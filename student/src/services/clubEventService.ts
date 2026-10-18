@@ -123,30 +123,52 @@ const CHUNK_SIZE = 700_000;
 const chunkRef = (eventId: string, fileId: string, index: number) =>
   doc(db, CLUB_EVENTS_COLLECTION, `${eventId}__chunk__${fileId}__${String(index).padStart(4, '0')}`);
 
+export type UploadProgress = (percent: number) => void;
+
 const saveEventFiles = async (
   eventId: string,
-  files: EventFileAttachment[]
+  files: EventFileAttachment[],
+  onProgress?: UploadProgress
 ): Promise<EventFileAttachment[]> => {
+  const PER_BATCH = 8;       // 8 x 700 KB per commit, safely under Firestore's batch size limit
+  const CONCURRENCY = 5;     // commits in flight at once (much faster than one-by-one)
+
+  // Build every write job up-front so progress is accurate
+  type Job = { fileId: string; from: number; to: number; data: string };
+  const jobs: Job[] = [];
   const stored: EventFileAttachment[] = [];
 
   for (const f of files) {
     const data = f.dataUrl || '';
     const count = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
-
-    // Write chunks in small batches to stay well inside Firestore batch limits
-    for (let start = 0; start < count; start += 6) {
-      const batch = writeBatch(db);
-      for (let i = start; i < Math.min(start + 6, count); i++) {
-        batch.set(
-          chunkRef(eventId, f.id, i),
-          { isFileChunk: true, eventId, fileId: f.id, index: i, data: data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE) }
-        );
-      }
-      await batch.commit();
+    for (let start = 0; start < count; start += PER_BATCH) {
+      jobs.push({ fileId: f.id, from: start, to: Math.min(start + PER_BATCH, count), data });
     }
-
     stored.push({ ...f, dataUrl: '', chunkCount: count });
   }
+
+  let done = 0;
+  onProgress?.(0);
+  let next = 0;
+  const worker = async () => {
+    while (next < jobs.length) {
+      const job = jobs[next++];
+      const batch = writeBatch(db);
+      for (let i = job.from; i < job.to; i++) {
+        batch.set(chunkRef(eventId, job.fileId, i), {
+          isFileChunk: true,
+          eventId,
+          fileId: job.fileId,
+          index: i,
+          data: job.data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE),
+        });
+      }
+      await batch.commit();
+      done++;
+      onProgress?.(Math.round((done / jobs.length) * 100));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, worker));
 
   return stored;
 };
@@ -183,12 +205,13 @@ export const fetchEventFileDataUrl = async (
 };
 
 export const createClubEventAgenda = async (
-  eventData: Omit<ClubEventAgenda, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+  eventData: Omit<ClubEventAgenda, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
+  onProgress?: UploadProgress
 ): Promise<ClubEventAgenda> => {
   const id = `clevt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
-  const storedFiles = await saveEventFiles(id, eventData.files || []);
+  const storedFiles = await saveEventFiles(id, eventData.files || [], onProgress);
 
   const newEvent: ClubEventAgenda = {
     ...eventData,
@@ -260,7 +283,8 @@ export const reviewEventBySecretary = async (
 
 export const reuploadEventFiles = async (
   eventId: string,
-  newFiles: EventFileAttachment[]
+  newFiles: EventFileAttachment[],
+  onProgress?: UploadProgress
 ): Promise<void> => {
   const docRef = doc(db, CLUB_EVENTS_COLLECTION, eventId);
   const now = new Date().toISOString();
@@ -268,7 +292,7 @@ export const reuploadEventFiles = async (
   const existing = await getDoc(docRef);
   const oldFiles = existing.exists() ? ((existing.data() as ClubEventAgenda).files || []) : [];
 
-  const storedFiles = await saveEventFiles(eventId, newFiles);
+  const storedFiles = await saveEventFiles(eventId, newFiles, onProgress);
 
   await updateDoc(docRef, {
     files: storedFiles,
