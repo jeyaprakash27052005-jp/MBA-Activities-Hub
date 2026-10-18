@@ -134,7 +134,7 @@ function MainApp() {
         openChangePasswordModal={() => setIsPasswordModalOpen(true)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <main key={currentTab} className="page-anim max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {/* Faculty Dedicated Portal */}
         {currentTab === 'faculty_portal' && isFaculty && (
           <FacultyPortal

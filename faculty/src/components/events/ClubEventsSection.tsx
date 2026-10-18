@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { ClubCategory, ClubEventAgenda, EventApprovalStatus, EventFileAttachment, UserProfile } from '../../types';
+import { celebrate } from '../../lib/celebrate';
 import { useAuth } from '../../context/AuthContext';
 import { reviewEventBySecretary, reuploadEventFiles, fetchEventFileDataUrl } from '../../services/clubEventService';
 
@@ -28,6 +29,7 @@ interface ClubEventsSectionProps {
   onOpenCreateModal: () => void;
   canCreateEvent: boolean;
   allStudents?: UserProfile[];
+  lockedClub?: string; // Secretary: only this club's events are shown / can be approved
 }
 
 export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
@@ -36,6 +38,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
   onOpenCreateModal,
   canCreateEvent,
   allStudents = [],
+  lockedClub,
 }) => {
   // Live gender lookup (falls back to the gender saved with the event)
   const genderOf = (roll?: string, fallback?: string) => {
@@ -68,7 +71,8 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
   const filteredEvents = events.filter((ev) => {
     const matchesClub = selectedClubFilter === 'all' || ev.club === selectedClubFilter;
     const matchesStatus = statusFilter === 'all' || ev.status === statusFilter;
-    return matchesClub && matchesStatus;
+    const matchesLocked = !lockedClub || ev.club === lockedClub;
+    return matchesClub && matchesStatus && matchesLocked;
   });
 
   const handleApprove = async (ev: ClubEventAgenda) => {
@@ -102,6 +106,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
         revisionNote
       );
       setRevisionModalEvent(null);
+      celebrate();
     } catch (err: any) {
       alert('Failed to request revision: ' + err.message);
     } finally {
@@ -182,6 +187,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
       await reuploadEventFiles(reuploadEvent.id, reuploadFiles, setReuploadPercent);
       setReuploadEvent(null);
       setReuploadFiles([]);
+      celebrate();
     } catch (err: any) {
       alert('Re-upload failed: ' + err.message);
     } finally {
@@ -229,9 +235,9 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              All Clubs ({events.length})
+              {lockedClub ? `${lockedClub} (${events.filter((e) => e.club === lockedClub).length})` : `All Clubs (${events.length})`}
             </button>
-            {clubs.map((c) => (
+            {!lockedClub && clubs.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setSelectedClubFilter(c.name)}
@@ -428,7 +434,7 @@ export const ClubEventsSection: React.FC<ClubEventsSectionProps> = ({
                 )}
 
                 {/* Secretary Review Buttons */}
-                {isSecretary && isPending && (
+                {isSecretary && isPending && (!lockedClub || ev.club === lockedClub) && (
                   <div className="flex items-center gap-1.5 ml-auto">
                     <button
                       onClick={() => handleOpenRevisionModal(ev)}

@@ -130,6 +130,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       </div>
 
       {/* 1. CLUB EVENTS & AGENDA LIST */}
+      <div key={studentTab} className="page-anim space-y-6">
       {studentTab === 'club_events' && (
         <ClubEventsSection
           events={clubEvents}
@@ -137,6 +138,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           onOpenCreateModal={onOpenCreateClubEvent}
           canCreateEvent={isExecutive}
           allStudents={allStudents}
+          lockedClub={isSecretary ? (userProfile?.club || 'Unassigned') : undefined}
         />
       )}
 
@@ -186,6 +188,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         </div>
       )}
+
+      </div>
 
     </div>
   );

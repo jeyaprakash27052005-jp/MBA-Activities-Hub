@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { celebrate } from '../../lib/celebrate';
 import { 
   GraduationCap, 
   ArrowRight, 
@@ -23,6 +24,7 @@ export const StudentLogin: React.FC = () => {
     setLoading(true);
     try {
       await loginWithRollNumber(studentRoll, studentPass);
+      celebrate();
     } catch (err: any) {
       setError(err?.message || 'Login failed. Please check your Roll Number and Password.');
     } finally {
@@ -36,7 +38,7 @@ export const StudentLogin: React.FC = () => {
       
       {/* Brand Header */}
       <div className="text-center mb-6 max-w-md">
-        <BrandLogo className="h-16 w-auto mx-auto mb-3 object-contain" fallback={
+        <BrandLogo className="h-28 w-28 mx-auto mb-3 object-contain mix-blend-multiply" fallback={
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20 mb-3">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>

@@ -16,6 +16,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { ClubCategory, ClubEventAgenda, EventFileAttachment, EventParticipant, UserProfile } from '../../types';
+import { celebrate } from '../../lib/celebrate';
 import { useAuth } from '../../context/AuthContext';
 import { createClubEventAgenda, getActiveSelectedParticipantRolls } from '../../services/clubEventService';
 
@@ -61,6 +62,9 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
 
   // Only Executives choose the event participants (compulsory: exactly 8)
   const isExecutiveUser = userProfile?.role === 'student' && (userProfile?.position || '').trim().toLowerCase() === 'executive';
+
+  // The event's club is the Executive's assigned club (set by faculty / Head Admin)
+  const lockedClub = isExecutiveUser ? (userProfile?.club || '') : '';
 
   if (!isOpen) return null;
 
@@ -168,6 +172,11 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
       return;
     }
 
+    if (!lockedClub) {
+      alert('No club is assigned to you yet. Ask faculty / Head Admin to assign your club first.');
+      return;
+    }
+
     if (!title.trim()) {
       alert('Please enter event title');
       return;
@@ -194,7 +203,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
       const inchargeStudent = allStudents.find(s => s.rollNumber === inchargeRoll);
       const created = await createClubEventAgenda({
         title,
-        club: selectedClub,
+        club: lockedClub,
         date: eventDate,
         startTime,
         endTime,
@@ -209,6 +218,7 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
         files,
       }, setUploadPercent);
 
+      celebrate();
       onEventCreated(created);
       onClose();
     } catch (err: any) {
@@ -265,17 +275,10 @@ export const EventAgendaModal: React.FC<EventAgendaModalProps> = ({
               <label className="text-xs font-bold text-slate-700">
                 Club / Category *
               </label>
-              <select
-                value={selectedClub}
-                onChange={(e) => setSelectedClub(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-300 text-slate-900 font-semibold"
-              >
-                {clubs.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-100 border border-slate-200 text-slate-800 font-semibold">
+                {lockedClub || 'No club assigned yet'}
+              </div>
+              <p className="text-[10px] text-slate-400">Your assigned club (set by faculty).</p>
             </div>
           </div>
 

@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/* Page / tab movement animation */
+@keyframes pageIn {
+  0%   { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(3px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.page-anim { animation: pageIn 0.5s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+
+/* Staggered entrance for cards / table rows inside an animated page */
+@keyframes itemIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-anim > * { animation: itemIn 0.45s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+.page-anim > *:nth-child(2) { animation-delay: 0.05s; }
+.page-anim > *:nth-child(3) { animation-delay: 0.1s; }
+.page-anim > *:nth-child(4) { animation-delay: 0.15s; }
+
+/* Buttons feel alive */
+button { transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+button:not(:disabled):active { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-anim, .page-anim > * { animation: none !important; }
+}

@@ -60,7 +60,7 @@ function MainApp() {
         openChangePasswordModal={() => setIsPasswordModalOpen(true)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <main className="page-anim max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <StudentPortal
           clubEvents={clubEvents}
           clubs={clubs}

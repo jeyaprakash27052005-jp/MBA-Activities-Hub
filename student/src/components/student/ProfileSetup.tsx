@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserCircle, Lock, AlertCircle } from 'lucide-react';
+import { celebrate } from '../../lib/celebrate';
 import { useAuth } from '../../context/AuthContext';
 import { UserProfile } from '../../types';
 
@@ -34,6 +35,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ profile }) => {
     setSaving(true);
     try {
       await updateUserProfile({ displayName: name.trim(), email: collegeEmail.trim().toLowerCase(), gender, profileCompleted: true });
+      celebrate();
     } catch (err: any) {
       setError(err?.message || 'Could not save your profile. Please try again.');
     } finally {

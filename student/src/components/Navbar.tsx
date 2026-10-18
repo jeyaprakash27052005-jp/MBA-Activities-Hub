@@ -29,23 +29,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   // Dynamic Navigation items tailored to current authenticated role
-  const getNavItems = () => {
-    if (isAdmin) {
-      return [
-        { id: 'admin_portal', label: 'Admin Command', icon: ShieldCheck },
-        { id: 'agenda', label: 'Activities Agenda', icon: Calendar },
-        { id: 'forms', label: 'Forms & Submissions', icon: FileText },
-      ];
-    } else if (isFaculty) {
-      return [
-        { id: 'faculty_portal', label: 'Faculty Workspace', icon: LayoutDashboard },
-        { id: 'agenda', label: 'Activities Agenda', icon: Calendar },
-        { id: 'forms', label: 'Forms & Registrations', icon: FileText },
-      ];
-    } else {
-      return [];
-    }
-  };
+  // No top menu links: each role works from its own portal page.
+  const getNavItems = (): { id: string; label: string; icon: any }[] => [];
 
   const navItems = getNavItems();
 
@@ -60,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setCurrentTab(isAdmin ? 'admin_portal' : isFaculty ? 'faculty_portal' : 'student_portal')}
           >
             <BrandLogo
-              className="h-10 w-auto max-w-[56px] object-contain"
+              className="h-11 w-11 object-contain"
               fallback={
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
                   <GraduationCap className="w-6 h-6" />

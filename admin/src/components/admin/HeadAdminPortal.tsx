@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { celebrate } from '../../lib/celebrate';
 import { 
   ShieldCheck, 
   ToggleLeft, 
@@ -232,6 +233,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         status: 'active',
       });
       setIsAddUserModalOpen(false);
+      celebrate();
       setNewUserName('');
       setNewUserRoll('');
       setNewUserEmail('');
@@ -275,6 +277,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         status: 'active',
       });
       setFacultySuccess(`Faculty profile "${facName}" (ID: ${cleanId}) created successfully! They can now log in using ID: ${cleanId} and password.`);
+      celebrate();
       setFacRoll('');
       setFacName('');
       setFacEmail('');
@@ -296,9 +299,10 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     try {
       await updateSystemUser(u.uid, {
         position: chosen.position,
-        club: chosen.position === 'Member' ? '' : chosen.club,
+        club: chosen.position === 'Member' ? '' : (chosen.club || clubs[0]?.name || 'NISM'),
       });
       setSavedPositionSuccessUid(u.uid);
+      celebrate();
       setTimeout(() => setSavedPositionSuccessUid(null), 2500);
     } catch (err: any) {
       alert('Failed to update position: ' + err.message);
@@ -317,6 +321,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
       await addCustomClub(newClubName, newClubDesc, 'Head Admin');
       setNewClubName('');
       setNewClubDesc('');
+      celebrate();
       alert('New club / category added successfully!');
     } catch (err: any) {
       alert('Failed to add club: ' + err.message);
@@ -473,6 +478,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
       </div>
 
       {/* 1. CLUB EVENTS & SECRETARY OVERSIGHT */}
+      <div key={adminTab} className="page-anim space-y-6">
       {adminTab === 'club_events' && (
         <ClubEventsSection
           events={clubEvents}
@@ -571,81 +577,66 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="px-4 py-3">Roll Number</th>
-                    <th className="px-4 py-3">Student Name</th>
-                    <th className="px-4 py-3">Gender</th>
-                    <th className="px-4 py-3">Assigned Position</th>
-                    <th className="px-4 py-3">Assigned Club</th>
-                    <th className="px-4 py-3">Action</th>
-                    <th className="px-4 py-3 text-right">Delete</th>
+                    <th className="px-3 py-2.5">Roll No.</th>
+                    <th className="px-3 py-2.5">Student</th>
+                    <th className="px-3 py-2.5">Position / Club</th>
+                    <th className="px-3 py-2.5 text-right sticky right-0 bg-slate-50">Action</th>
+                    <th className="px-3 py-2.5 text-right">Delete</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {filteredUsers.filter(u => u.role === 'student').slice(0, 100).map((u) => {
+                    const defaultClub = u.club || clubs[0]?.name || 'NISM';
                     const currentPos = editingPositions[u.uid]?.position ?? (u.position || 'Member');
-                    const currentClub = editingPositions[u.uid]?.club ?? (u.club || 'NISM');
+                    const currentClub = editingPositions[u.uid]?.club ?? defaultClub;
                     const isSaving = submittingPositionUid === u.uid;
                     const isSaved = savedPositionSuccessUid === u.uid;
 
+                    const patchEdit = (patch: Partial<{ position: string; club: string }>) =>
+                      setEditingPositions(prev => ({
+                        ...prev,
+                        [u.uid]: {
+                          position: prev[u.uid]?.position ?? (u.position || 'Member'),
+                          club: prev[u.uid]?.club ?? defaultClub,
+                          ...patch,
+                        }
+                      }));
+
                     return (
-                      <tr key={u.uid} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-mono font-bold text-indigo-600">
-                          {u.rollNumber}
+                      <tr key={u.uid} className="hover:bg-slate-50 align-top">
+                        <td className="px-3 py-2.5 font-mono font-bold text-indigo-600 whitespace-nowrap">{u.rollNumber}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="font-bold text-slate-900">{u.displayName}</div>
+                          <div className="text-[10px] text-slate-400">{u.gender || 'Gender not set'}</div>
                         </td>
-                        <td className="px-4 py-3 font-bold text-slate-900">
-                          {u.displayName}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">{u.gender || 'Not set'}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5 space-y-1">
                           <select
                             value={currentPos}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setEditingPositions(prev => ({
-                                ...prev,
-                                [u.uid]: {
-                                  position: val,
-                                  club: prev[u.uid]?.club ?? (u.club || 'NISM'),
-                                }
-                              }));
-                            }}
-                            className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800"
+                            onChange={(e) => patchEdit({ position: e.target.value })}
+                            className="w-40 px-2 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 text-slate-800 block"
                           >
-                            <option value="Secretary">Secretary (Can Approve Events)</option>
-                            <option value="Executive">Executive (Selects 8 Participants)</option>
-                            <option value="Member">Member (Normal Member)</option>
+                            <option value="Secretary">Secretary</option>
+                            <option value="Executive">Executive</option>
+                            <option value="Member">Member</option>
                           </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          {currentPos === 'Member' ? (
-                            <span className="text-slate-400">&mdash;</span>
-                          ) : (
-                          <select
-                            value={currentClub}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setEditingPositions(prev => ({
-                                ...prev,
-                                [u.uid]: {
-                                  position: prev[u.uid]?.position ?? (u.position || 'Member'),
-                                  club: val,
-                                }
-                              }));
-                            }}
-                            className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white"
-                          >
-                            {clubs.map(c => (
-                              <option key={c.id} value={c.name}>{c.name}</option>
-                            ))}
-                          </select>
+                          {currentPos !== 'Member' && (
+                            <select
+                              value={currentClub}
+                              onChange={(e) => patchEdit({ club: e.target.value })}
+                              className="w-40 px-2 py-1 rounded-lg text-xs border border-slate-200 bg-white block"
+                            >
+                              {clubs.map(c => (
+                                <option key={c.id} value={c.name}>{c.name}</option>
+                              ))}
+                            </select>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5 text-right sticky right-0 bg-white shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.18)]">
                           <button
                             type="button"
                             onClick={() => handleSubmitPosition(u)}
                             disabled={isSaving}
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs flex items-center gap-1 transition-all disabled:opacity-50"
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs inline-flex items-center gap-1 transition-all disabled:opacity-50"
                           >
                             {isSaving ? (
                               <span>Submitting...</span>
@@ -659,7 +650,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                             )}
                           </button>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3 py-2.5 text-right">
                           <button
                             onClick={async () => {
                               if (confirm(`Remove ${u.displayName}?`)) await deleteSystemUser(u.uid);
@@ -981,6 +972,8 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Add User Modal */}
       {isAddUserModalOpen && (

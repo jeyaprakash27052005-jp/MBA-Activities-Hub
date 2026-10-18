@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { celebrate } from '../lib/celebrate';
 import { 
   ArrowLeft, 
   FileText, 
@@ -107,6 +108,7 @@ export const FormDetails: React.FC<FormDetailsProps> = ({ form, onBack, onEdit }
         status: 'pending',
       });
       setSubmittedSuccess(true);
+      celebrate();
     } catch (err) {
       alert('Error submitting form: ' + err);
     } finally {

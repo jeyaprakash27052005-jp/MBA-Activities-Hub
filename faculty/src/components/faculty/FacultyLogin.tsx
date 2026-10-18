@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { celebrate } from '../../lib/celebrate';
 import { 
   Building, 
   ArrowRight, 
@@ -21,6 +22,7 @@ export const FacultyLogin: React.FC = () => {
     setLoading(true);
     try {
       await loginWithFacultyCredentials(facultyId, facultyPass);
+      celebrate();
     } catch (err: any) {
       setError(err?.message || 'Faculty login failed. Check your Faculty ID and Password.');
     } finally {
@@ -34,7 +36,7 @@ export const FacultyLogin: React.FC = () => {
       
       {/* Brand Header */}
       <div className="text-center mb-6 max-w-md">
-        <BrandLogo className="h-16 w-auto mx-auto mb-3 object-contain" fallback={
+        <BrandLogo className="h-28 w-28 mx-auto mb-3 object-contain mix-blend-multiply" fallback={
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-blue-500/20 mb-3">
             <Building className="w-8 h-8 text-white" />
           </div>

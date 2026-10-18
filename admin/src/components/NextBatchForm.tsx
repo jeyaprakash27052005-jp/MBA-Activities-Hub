@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { celebrate } from '../lib/celebrate';
 import { Layers, Check, AlertCircle } from 'lucide-react';
 import { BatchConfig } from '../types';
 import { addNextBatch, subscribeToBatches, DEFAULT_BATCHES } from '../services/userService';
@@ -25,6 +26,7 @@ export const NextBatchForm: React.FC = () => {
     try {
       const code = prefix.trim().toUpperCase();
       const res = await addNextBatch(code, start, end, year);
+      celebrate();
       const pad = (n: number) => String(n).padStart(3, '0');
       setMessage(
         `Batch ${code} ready: ${res.created} new student IDs created (${code}${pad(start)} to ${code}${pad(end)})` +
