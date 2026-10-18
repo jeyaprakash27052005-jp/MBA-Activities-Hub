@@ -88,7 +88,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           {/* Secretary & Executive Privilege Actions */}
           <div className="flex flex-wrap items-center gap-2">
-            {isExecutive && (
+            {(isSecretary || isExecutive) && (
               <button
                 onClick={onOpenCreateClubEvent}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white text-indigo-900 shadow-sm hover:bg-slate-100 transition-all hover:scale-[1.02]"
@@ -136,7 +136,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           events={clubEvents}
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
-          canCreateEvent={isExecutive}
+          canCreateEvent={isSecretary || isExecutive}
           allStudents={allStudents}
           lockedClub={isSecretary ? (userProfile?.club || 'Unassigned') : undefined}
         />

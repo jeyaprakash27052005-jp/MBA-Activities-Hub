@@ -31,7 +31,6 @@ import {
   createSystemUser, 
   updateSystemUser, 
   deleteSystemUser, 
-  generateStudentCohort, 
   subscribeToBatches,
   DEFAULT_BATCHES,
   importUsersFromExcelRows,
@@ -73,8 +72,6 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
   const [importSummary, setImportSummary] = useState<{ added: number; errors: string[] } | null>(null);
 
   // Cohort generation state
-  const [cohortLoading, setCohortLoading] = useState(false);
-  const [cohortSuccess, setCohortSuccess] = useState<string | null>(null);
 
   // User management state
   const [userSearch, setUserSearch] = useState('');
@@ -185,23 +182,6 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students_Template');
     XLSX.writeFile(wb, 'MBA_Student_Roster_Template.xlsx');
-  };
-
-  const handleGenerateCohort = async () => {
-    if (!confirm('Auto-generate student batch 25MBA001 to 25MBA175 with default Secretary, Executive, and Member positions?')) {
-      return;
-    }
-
-    setCohortLoading(true);
-    setCohortSuccess(null);
-    try {
-      const count = await generateStudentCohort('25MBA', 1, 175, '1st Year (2025-2027)');
-      setCohortSuccess(`Generated ${count} MBA students (25MBA001 to 25MBA175) with Secretary, Executive, and Member positions!`);
-    } catch (err: any) {
-      alert('Error generating batch: ' + err.message);
-    } finally {
-      setCohortLoading(false);
-    }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -363,31 +343,15 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleGenerateCohort}
-              disabled={cohortLoading}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-indigo-900 shadow-sm disabled:opacity-50 transition-all hover:bg-slate-100"
+              onClick={onOpenCreateClubEvent}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-indigo-900 shadow-sm transition-all hover:bg-slate-100"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>{cohortLoading ? 'Generating...' : 'Auto-Generate Cohort 25MBA001-175'}</span>
+              <Plus className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Create Event Agenda (8 Participants)</span>
             </button>
           </div>
         </div>
       </div>
-
-      {cohortSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold">{cohortSuccess}</span>
-          </div>
-          <button
-            onClick={() => setCohortSuccess(null)}
-            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
 
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto scrollbar-none">
@@ -484,7 +448,7 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
           events={clubEvents}
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
-          canCreateEvent={false}
+          canCreateEvent={true}
           allStudents={users.filter((u) => u.role === 'student')}
         />
       )}

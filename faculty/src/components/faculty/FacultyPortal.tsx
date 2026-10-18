@@ -139,6 +139,15 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
             </p>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={onOpenCreateClubEvent}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white text-blue-900 shadow-sm hover:bg-slate-100 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 text-blue-600" />
+              <span>Create Event Agenda (8 Participants)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -200,7 +209,7 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
           events={clubEvents}
           clubs={clubs}
           onOpenCreateModal={onOpenCreateClubEvent}
-          canCreateEvent={false}
+          canCreateEvent={true}
           allStudents={allStudents}
         />
       )}
