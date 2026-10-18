@@ -38,6 +38,7 @@ import {
 } from '../../services/userService';
 import { addCustomClub } from '../../services/clubEventService';
 import { NextBatchForm } from '../NextBatchForm';
+import { StudentProfileModal } from '../StudentProfileModal';
 import { ClubEventsSection } from '../events/ClubEventsSection';
 
 interface HeadAdminPortalProps {
@@ -75,6 +76,8 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
 
   // User management state
   const [userSearch, setUserSearch] = useState('');
+  const [profileUid, setProfileUid] = useState<string | null>(null);
+  const profileStudent = profileUid ? users.find((x) => x.uid === profileUid) : undefined;
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'student' | 'faculty' | 'admin'>('all');
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
@@ -571,7 +574,10 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
                         <td className="px-3 py-2.5 font-mono font-bold text-indigo-600 whitespace-nowrap">{u.rollNumber}</td>
                         <td className="px-3 py-2.5">
                           <div className="font-bold text-slate-900">{u.displayName}</div>
-                          <div className="text-[10px] text-slate-400">{u.gender || 'Gender not set'}</div>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                            <span>{u.gender || 'Gender not set'}</span>
+                            <button type="button" onClick={() => setProfileUid(u.uid)} className="text-indigo-600 hover:underline font-bold">View profile</button>
+                          </div>
                         </td>
                         <td className="px-3 py-2.5 space-y-1">
                           <select
@@ -1019,6 +1025,9 @@ export const HeadAdminPortal: React.FC<HeadAdminPortalProps> = ({
         </div>
       )}
 
+      {profileStudent && (
+        <StudentProfileModal student={profileStudent} clubs={clubs} onClose={() => setProfileUid(null)} />
+      )}
     </div>
   );
 };

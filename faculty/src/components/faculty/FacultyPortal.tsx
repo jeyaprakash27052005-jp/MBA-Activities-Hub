@@ -23,6 +23,7 @@ import { useAuth } from '../../context/AuthContext';
 import { updateSystemUser } from '../../services/userService';
 import { addCustomClub } from '../../services/clubEventService';
 import { NextBatchForm } from '../NextBatchForm';
+import { StudentProfileModal } from '../StudentProfileModal';
 import { ClubEventsSection } from '../events/ClubEventsSection';
 
 interface FacultyPortalProps {
@@ -56,6 +57,8 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
   const [facultySubTab, setFacultySubTab] = useState<'club_events' | 'positions' | 'next_batch' | 'clubs_mgmt' | 'activities' | 'forms'>('club_events');
 
   const [studentSearch, setStudentSearch] = useState('');
+  const [profileUid, setProfileUid] = useState<string | null>(null);
+  const profileStudent = profileUid ? allStudents.find((x) => x.uid === profileUid) : undefined;
   const [newClubName, setNewClubName] = useState('');
   const [newClubDesc, setNewClubDesc] = useState('');
   const [addingClub, setAddingClub] = useState(false);
@@ -274,7 +277,10 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
                           onChange={(e) => patchEdit({ displayName: e.target.value })}
                           className="w-36 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-900"
                         />
-                        <div className="text-[10px] text-slate-400 mt-0.5">{st.gender || 'Gender not set'}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
+                          <span>{st.gender || 'Gender not set'}</span>
+                          <button type="button" onClick={() => setProfileUid(st.uid)} className="text-blue-600 hover:underline font-bold">View profile</button>
+                        </div>
                       </td>
                       <td className="px-3 py-2.5 space-y-1">
                         <select
@@ -379,6 +385,9 @@ export const FacultyPortal: React.FC<FacultyPortalProps> = ({
 
       </div>
 
+      {profileStudent && (
+        <StudentProfileModal student={profileStudent} clubs={clubs} onClose={() => setProfileUid(null)} />
+      )}
     </div>
   );
 };
